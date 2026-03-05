@@ -2,7 +2,7 @@ import streamlit as st
 import sqlite3
 import pandas as pd
 
-# 1. 페이지 설정 및 메뉴 숨기기 (최강 숨기기 적용)
+# 1. 페이지 설정 및 최강 숨기기 적용
 st.set_page_config(page_title="상품 카테고리 통합 검색기", layout="wide")
 
 st.markdown("""
@@ -20,21 +20,21 @@ st.markdown("""
 st.markdown('<div id="top"></div>', unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# [수정 완료] 바뀐 파일명과 테이블명 반영
-DB_FILE = '상품검색 V4.db' # 수정한 파일명과 똑같아야 함
-TABLE_NAME = '"상품검색v4 260305"' # DB 안의 실제 테이블 이름
+# [정보 설정] 현재 사용 중인 DB 및 테이블 정보
+DB_FILE = '상품검색 V4.db' 
+TABLE_NAME = '"상품검색v4 260305"' 
 # ---------------------------------------------------------
 
+# [중요] 함수 정의가 호출보다 반드시 먼저 와야 합니다!
 def get_connection():
     try:
-        # DB 연결
         conn = sqlite3.connect(DB_FILE)
         return conn
     except Exception as e:
         st.error(f"❌ DB 연결 실패: {e}")
         return None
 
-# 카테고리 매핑 데이터 (제시해주신 리스트 전체)
+# 카테고리 매핑 데이터
 category_data = {
     "전체": "ALL", "국내배송 특가 ~70%": "CATE128", "개런티": "CATE117", "H1": "CATE72", "H2": "CATE73", "H3": "CATE74", 
     "CC 넘버원": "CATE75", "CC 티무역": "CATE76", "CC 팬더": "CATE77", "CC 나비/기타": "CATE78", "CC 일반": "CATE80",
@@ -58,51 +58,58 @@ with col_cat:
     selected_name = st.selectbox("📂 카테고리 선택", list(category_data.keys()))
     selected_code = category_data[selected_name]
 with col_keyword:
-    keyword = st.text_input("🔎 검색어 입력", placeholder="상품명, 원산지, 상품번호 조합 가능")
+    keyword = st.text_input("🔎 검색어 입력", placeholder="엔터만 치면 전체를 보여줍니다.")
 
-# 5. 검색 및 출력
-if keyword or selected_code != 'ALL':
-    conn = get_connection()
-    if conn:
-        conditions = []
-        if keyword:
-            k_list = keyword.split()
-            k_cond = " AND ".join([f'("상품명" LIKE "%{k}%" OR "원산지" LIKE "%{k}%" OR "상품번호" LIKE "%{k}%")' for k in k_list])
-            conditions.append(f"({k_cond})")
-        if selected_code != 'ALL':
-            conditions.append(f'"카테고리ID" LIKE "%{selected_code}%"')
+# 5. 데이터 검색 및 출력 로직
+conn = get_connection() # 위에서 def로 정의했기 때문에 이제 정상 작동합니다.
+if conn:
+    conditions = []
+    if keyword:
+        k_list = keyword.split()
+        k_cond = " AND ".join([f'("상품명" LIKE "%{k}%" OR "원산지" LIKE "%{k}%" OR "상품번호" LIKE "%{k}%")' for k in k_list])
+        conditions.append(f"({k_cond})")
+    else:
+        conditions.append("1=1")
+    if selected_code != 'ALL':
+        conditions.append(f'"카테고리ID" LIKE "%{selected_code}%"')
 
-        where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
+    where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
+    
+    # --- 전체 개수 먼저 파악 ---
+    count_query = f'SELECT COUNT(*) FROM {TABLE_NAME} {where_clause}'
+    total_count = pd.read_sql(count_query, conn).iloc[0, 0]
+
+    # --- 화면에 뿌려줄 데이터만 가져오기 ---
+    if 'load_count' not in st.session_state:
+        st.session_state.load_count = 100
+
+    query = f'SELECT * FROM {TABLE_NAME} {where_clause} LIMIT {st.session_state.load_count}'
+    df = pd.read_sql(query, conn)
+
+    # 6. 결과 출력
+    if total_count > 0:
+        st.success(f"✅ **{selected_name}** 전체 검색 결과: **{total_count:,}**건 (현재 {len(df)}개 표시 중)")
         
-        if 'load_count' not in st.session_state:
-            st.session_state.load_count = 100
+        for _, row in df.iterrows():
+            res_col1, res_col2 = st.columns([1, 4])
+            with res_col1:
+                if row.get('대표이미지URL'):
+                    st.image(row['대표이미지URL'], use_container_width=True)
+            with res_col2:
+                st.subheader(row['상품명'])
+                st.write(f"**🔢 번호:** `{row['상품번호']}` | {row['원산지']}")
+                st.write(f"**📂 카테고리:** {selected_name} ({row.get('카테고리ID', '')})")
+                st.link_button("🔗 상세페이지 바로가기", row['상품URL'])
+            st.divider()
 
-        # 데이터 조회
-        query = f'SELECT * FROM {TABLE_NAME} {where_clause} LIMIT {st.session_state.load_count}'
-        df = pd.read_sql(query, conn)
-
-        if not df.empty:
-            st.info(f"✅ **{selected_name}** 검색 결과: **{len(df)}**건")
-            for _, row in df.iterrows():
-                res_col1, res_col2 = st.columns([1, 4])
-                with res_col1:
-                    if row.get('대표이미지URL'):
-                        st.image(row['대표이미지URL'], use_container_width=True)
-                with res_col2:
-                    st.subheader(row['상품명'])
-                    # 원산지 라벨 제거 후 출력
-                    st.write(f"**🔢 번호:** `{row['상품번호']}` | {row['원산지']}")
-                    st.write(f"**📂 카테고리:** {selected_name} ({row.get('카테고리ID', '')})")
-                    st.link_button("🔗 상세페이지 바로가기", row['상품URL'])
-                st.divider()
-
-            if len(df) >= st.session_state.load_count:
-                if st.button("🔽 100개 더보기"):
-                    st.session_state.load_count += 100
-                    st.rerun()
-        else:
-            st.warning("검색 결과가 없습니다.")
-        conn.close()
+        if total_count > st.session_state.load_count:
+            if st.button(f"🔽 나머지 {total_count - st.session_state.load_count:,}개 더보기 (100개씩 추가)"):
+                st.session_state.load_count += 100
+                st.rerun()
+    else:
+        st.warning("검색 결과가 없습니다.")
+    
+    conn.close()
 
 # --- 맨 위로 이동 버튼 ---
 st.markdown("""
