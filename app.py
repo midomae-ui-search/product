@@ -2,16 +2,29 @@ import streamlit as st
 import sqlite3
 import pandas as pd
 
-# 1. 페이지 설정 (아이콘과 메뉴 숨기기 설정 추가)
-st.set_page_config(page_title="상품 카테고리 검색기", layout="wide")
+# 1. 페이지 설정
+st.set_page_config(page_title="상품 카테고리 통합 검색기", layout="wide")
 
-# --- [추가] CSS: 상단 Fork 아이콘 및 하단 Streamlit 메뉴 숨기기 ---
+# --- [최강 숨기기] CSS: 상단 헤더, GitHub Fork, 하단 메뉴/로고 강제 삭제 ---
 st.markdown("""
     <style>
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-    .stAppDeployButton {display:none;}
+    /* 상단 헤더 및 하단 푸터 전체 숨기기 */
+    header, footer {visibility: hidden !important; display: none !important;}
+    
+    /* 우측 상단 배포 버튼 및 깃허브 Fork 아이콘 강제 삭제 */
+    .stAppDeployButton, .viewerBadge_link__q6n6l, .viewerBadge_container__176p1, #MainMenu {
+        display: none !important;
+    }
+
+    /* 상단 툴바 및 여백 제거 */
+    [data-testid="stToolbar"] {
+        display: none !important;
+    }
+    
+    /* 상단 여백 보정 (헤더 삭제 후 생기는 빈 공간 줄이기) */
+    .stApp {
+        margin-top: -50px;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -19,7 +32,7 @@ st.markdown("""
 st.markdown('<div id="top"></div>', unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# [수정 완료] 새로운 테이블 정보 반영
+# [정보 설정] 현재 사용 중인 DB 및 테이블 정보
 DB_FILE = '상품검색 Ver3.db' 
 TABLE_NAME = '"상품검색v4 260305"' 
 # ---------------------------------------------------------
@@ -32,7 +45,7 @@ def get_connection():
         st.error(f"❌ DB 연결 실패: {e}")
         return None
 
-# 카테고리 매핑 데이터 (전체 유지)
+# 카테고리 매핑 데이터
 category_data = {
     "전체": "ALL", "국내배송 특가 ~70%": "CATE128", "개런티": "CATE117", "H1": "CATE72", "H2": "CATE73", "H3": "CATE74", 
     "CC 넘버원": "CATE75", "CC 티무역": "CATE76", "CC 팬더": "CATE77", "CC 나비/기타": "CATE78", "CC 일반": "CATE80",
@@ -50,14 +63,17 @@ category_data = {
 
 st.title("🔍 상품 카테고리 통합 검색기")
 
-# 검색 영역 (비율 1:3)
+# 4. 검색 영역 비율 조정 (1:3)
 col_cat, col_keyword = st.columns([1, 3])
+
 with col_cat:
     selected_name = st.selectbox("📂 카테고리 선택", list(category_data.keys()))
     selected_code = category_data[selected_name]
+
 with col_keyword:
     keyword = st.text_input("🔎 검색어 입력", placeholder="상품명, 원산지, 상품번호 조합 가능")
 
+# 5. 데이터 검색 및 출력 로직
 if keyword or selected_code != 'ALL':
     conn = get_connection()
     if conn:
@@ -77,6 +93,7 @@ if keyword or selected_code != 'ALL':
         query = f'SELECT * FROM {TABLE_NAME} {where_clause} LIMIT {st.session_state.load_count}'
         df = pd.read_sql(query, conn)
 
+        # 6. 결과 출력
         if not df.empty:
             st.info(f"✅ **{selected_name}** 검색 결과: **{len(df)}**건")
             for _, row in df.iterrows():
@@ -86,6 +103,7 @@ if keyword or selected_code != 'ALL':
                         st.image(row['대표이미지URL'], use_container_width=True)
                 with res_col2:
                     st.subheader(row['상품명'])
+                    # 원산지 라벨 제거 후 데이터만 출력
                     st.write(f"**🔢 번호:** `{row['상품번호']}` | {row['원산지']}")
                     st.write(f"**📂 카테고리:** {selected_name} ({row.get('카테고리ID', '')})")
                     st.link_button("🔗 상세페이지 바로가기", row['상품URL'])
