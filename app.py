@@ -15,14 +15,36 @@ st.markdown("""
         display: none !important;
     }
     .stApp { margin-top: -60px; }
+    
+    /* --- [수정] 위로 가기 버튼 위치 조정 (80px로 올림) --- */
+    .top-btn { 
+        position: fixed; 
+        bottom: 80px; /* 기존 30px에서 80px로 변경 */
+        right: 30px; 
+        z-index: 999; 
+        background: white; 
+        border: 2px solid black; 
+        border-radius: 50%; 
+        width: 50px; 
+        height: 50px; 
+        display: flex; 
+        align-items: center; 
+        justify-content: center;
+        text-decoration: none; 
+        color: black !important; 
+        font-weight: bold; 
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2); 
+    }
+    .top-btn:hover { background-color: #f0f2f6; }
     </style>
+    <a class="top-btn" href="#top">↑</a>
     """, unsafe_allow_html=True)
 
 # --- 최상단 앵커 (Top 버튼용) ---
 st.markdown('<div id="top"></div>', unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# [수정] 테이블 이름을 대괄호 []로 감싸서 공백 문제를 해결합니다.
+# [정보 설정] 현재 사용 중인 DB 및 테이블 정보
 DB_FILE = '상품검색 V4.db' 
 TABLE_NAME = '[상품검색v4 260305]' 
 # ---------------------------------------------------------
@@ -53,7 +75,7 @@ category_data = {
 
 st.title("🔍 상품 카테고리 통합 검색기")
 
-# 검색 영역 (1:3 비율)
+# 4. 검색 영역 (1:3 비율)
 col_cat, col_keyword = st.columns([1, 3])
 with col_cat:
     selected_name = st.selectbox("📂 카테고리 선택", list(category_data.keys()))
@@ -61,7 +83,7 @@ with col_cat:
 with col_keyword:
     keyword = st.text_input("🔎 검색어 입력", placeholder="엔터만 치면 전체를 보여줍니다.")
 
-# 5. 데이터 검색 로직
+# 5. 데이터 검색 및 출력 로직
 conn = get_connection()
 if conn:
     conditions = []
@@ -77,9 +99,11 @@ if conn:
     where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
     
     try:
-        # [수정] 전체 개수 파악
+        # 전체 개수 파악
         count_query = f'SELECT COUNT(*) FROM {TABLE_NAME} {where_clause}'
-        total_count = pd.read_sql(count_query, conn).iloc[0, 0] # 정확한 숫자 추출
+        # pd.read_sql의 결과를 숫자로 변환
+        count_df = pd.read_sql(count_query, conn)
+        total_count = int(count_df.iloc[0, 0])
 
         if 'load_count' not in st.session_state:
             st.session_state.load_count = 100
@@ -111,19 +135,5 @@ if conn:
             st.warning("검색 결과가 없습니다.")
     except Exception as e:
         st.error(f"데이터 로드 오류: {e}")
-        # 오류 발생 시 실제 테이블 목록을 출력해 확인합니다.
-        cur = conn.cursor()
-        cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
-        st.write("📂 실제 테이블 목록:", cur.fetchall())
     
     conn.close()
-
-# --- 맨 위로 이동 버튼 ---
-st.markdown("""
-    <style>
-    .top-btn { position: fixed; bottom: 30px; right: 30px; z-index: 999; background: white; border: 2px solid black; 
-                border-radius: 50%; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center;
-                text-decoration: none; color: black; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
-    </style>
-    <a class="top-btn" href="#top">↑</a>
-""", unsafe_allow_html=True)
