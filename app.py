@@ -5,14 +5,31 @@ import pandas as pd
 # 1. 페이지 설정 및 최강 숨기기 적용
 st.set_page_config(page_title="상품 카테고리 통합 검색기", layout="wide")
 
+# --- [수정] 모든 관리자용 툴바 및 배지 강제 삭제 (CSS) ---
 st.markdown("""
     <style>
+    /* 1. 상단 헤더, 하단 푸터 전체 삭제 */
     header, footer {visibility: hidden !important; display: none !important;}
+    
+    /* 2. 우측 상단 GitHub 아이콘 및 배포 버튼 강제 삭제 */
     .stAppDeployButton, .viewerBadge_link__q6n6l, .viewerBadge_container__176p1, #MainMenu {
         display: none !important;
     }
-    [data-testid="stToolbar"] { display: none !important; }
-    .stApp { margin-top: -50px; }
+
+    /* 3. 하단 Streamlit 로고 및 툴바 강제 삭제 */
+    [data-testid="stToolbar"], [data-testid="stDecoration"], [data-testid="stStatusWidget"] {
+        display: none !important;
+    }
+    
+    /* 4. 상단 여백 제거 */
+    .stApp {
+        margin-top: -60px;
+    }
+    
+    /* 5. 링크 버튼 스타일 (선택사항: 더 깔끔하게) */
+    .stLinkButton > a {
+        border-radius: 20px !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -53,7 +70,6 @@ st.title("🔍 상품 카테고리 통합 검색기")
 
 # 4. 검색 영역 (1:3 비율)
 col_cat, col_keyword = st.columns([1, 3])
-
 with col_cat:
     selected_name = st.selectbox("📂 카테고리 선택", list(category_data.keys()))
     selected_code = category_data[selected_name]
@@ -75,22 +91,19 @@ if conn:
 
     where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
     
-    # --- 전체 개수 파악 ---
     try:
+        # 전체 개수 파악
         count_query = f'SELECT COUNT(*) FROM {TABLE_NAME} {where_clause}'
         total_count = pd.read_sql(count_query, conn).iloc[0, 0]
-    except:
-        total_count = 0
 
-    # --- 화면에 표시할 데이터만 가져오기 ---
-    if 'load_count' not in st.session_state:
-        st.session_state.load_count = 100
+        if 'load_count' not in st.session_state:
+            st.session_state.load_count = 100
 
-    try:
+        # 화면용 데이터 로드
         query = f'SELECT * FROM {TABLE_NAME} {where_clause} LIMIT {st.session_state.load_count}'
         df = pd.read_sql(query, conn)
 
-        # 6. 결과 출력
+        # 결과 출력
         if total_count > 0:
             st.info(f"✅ **{selected_name}** 검색 결과: **{total_count:,}**건 (현재 {len(df)}개 표시 중)")
             
@@ -100,14 +113,8 @@ if conn:
                     if row.get('대표이미지URL'):
                         st.image(row['대표이미지URL'], use_container_width=True)
                 with res_col2:
-                    # 상품명 출력 (subheader 제거로 더 슬림하게 가능)
                     st.markdown(f"### {row['상품명'] if '상품명' in row else ''}")
-                    
-                    # 번호와 원산지(설명)만 한 줄에 표시
                     st.write(f"**🔢 번호:** `{row['상품번호']}` | {row['원산지']}")
-                    
-                    # --- [수정] 요청하신 카테고리 정보 출력 라인 삭제됨 ---
-                    
                     st.link_button("🔗 상세페이지 바로가기", row['상품URL'])
                 st.divider()
 
@@ -118,7 +125,7 @@ if conn:
         else:
             st.warning("검색 결과가 없습니다.")
     except Exception as e:
-        st.error(f"데이터를 불러오는 중 오류가 발생했습니다: {e}")
+        st.error(f"데이터 로드 오류: {e}")
     
     conn.close()
 
