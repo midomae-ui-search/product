@@ -25,7 +25,6 @@ DB_FILE = '상품검색 V4.db'
 TABLE_NAME = '"상품검색v4 260305"' 
 # ---------------------------------------------------------
 
-# [중요] 함수 정의가 호출보다 반드시 먼저 와야 합니다!
 def get_connection():
     try:
         conn = sqlite3.connect(DB_FILE)
@@ -54,6 +53,7 @@ st.title("🔍 상품 카테고리 통합 검색기")
 
 # 4. 검색 영역 (1:3 비율)
 col_cat, col_keyword = st.columns([1, 3])
+
 with col_cat:
     selected_name = st.selectbox("📂 카테고리 선택", list(category_data.keys()))
     selected_code = category_data[selected_name]
@@ -61,7 +61,7 @@ with col_keyword:
     keyword = st.text_input("🔎 검색어 입력", placeholder="엔터만 치면 전체를 보여줍니다.")
 
 # 5. 데이터 검색 및 출력 로직
-conn = get_connection() # 위에서 def로 정의했기 때문에 이제 정상 작동합니다.
+conn = get_connection()
 if conn:
     conditions = []
     if keyword:
@@ -75,39 +75,50 @@ if conn:
 
     where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
     
-    # --- 전체 개수 먼저 파악 ---
-    count_query = f'SELECT COUNT(*) FROM {TABLE_NAME} {where_clause}'
-    total_count = pd.read_sql(count_query, conn).iloc[0, 0]
+    # --- 전체 개수 파악 ---
+    try:
+        count_query = f'SELECT COUNT(*) FROM {TABLE_NAME} {where_clause}'
+        total_count = pd.read_sql(count_query, conn).iloc[0, 0]
+    except:
+        total_count = 0
 
-    # --- 화면에 뿌려줄 데이터만 가져오기 ---
+    # --- 화면에 표시할 데이터만 가져오기 ---
     if 'load_count' not in st.session_state:
         st.session_state.load_count = 100
 
-    query = f'SELECT * FROM {TABLE_NAME} {where_clause} LIMIT {st.session_state.load_count}'
-    df = pd.read_sql(query, conn)
+    try:
+        query = f'SELECT * FROM {TABLE_NAME} {where_clause} LIMIT {st.session_state.load_count}'
+        df = pd.read_sql(query, conn)
 
-    # 6. 결과 출력
-    if total_count > 0:
-        st.success(f"✅ **{selected_name}** 전체 검색 결과: **{total_count:,}**건 (현재 {len(df)}개 표시 중)")
-        
-        for _, row in df.iterrows():
-            res_col1, res_col2 = st.columns([1, 4])
-            with res_col1:
-                if row.get('대표이미지URL'):
-                    st.image(row['대표이미지URL'], use_container_width=True)
-            with res_col2:
-                st.subheader(row['상품명'])
-                st.write(f"**🔢 번호:** `{row['상품번호']}` | {row['원산지']}")
-                st.write(f"**📂 카테고리:** {selected_name} ({row.get('카테고리ID', '')})")
-                st.link_button("🔗 상세페이지 바로가기", row['상품URL'])
-            st.divider()
+        # 6. 결과 출력
+        if total_count > 0:
+            st.info(f"✅ **{selected_name}** 검색 결과: **{total_count:,}**건 (현재 {len(df)}개 표시 중)")
+            
+            for _, row in df.iterrows():
+                res_col1, res_col2 = st.columns([1, 4])
+                with res_col1:
+                    if row.get('대표이미지URL'):
+                        st.image(row['대표이미지URL'], use_container_width=True)
+                with res_col2:
+                    # 상품명 출력 (subheader 제거로 더 슬림하게 가능)
+                    st.markdown(f"### {row['상품명'] if '상품명' in row else ''}")
+                    
+                    # 번호와 원산지(설명)만 한 줄에 표시
+                    st.write(f"**🔢 번호:** `{row['상품번호']}` | {row['원산지']}")
+                    
+                    # --- [수정] 요청하신 카테고리 정보 출력 라인 삭제됨 ---
+                    
+                    st.link_button("🔗 상세페이지 바로가기", row['상품URL'])
+                st.divider()
 
-        if total_count > st.session_state.load_count:
-            if st.button(f"🔽 나머지 {total_count - st.session_state.load_count:,}개 더보기 (100개씩 추가)"):
-                st.session_state.load_count += 100
-                st.rerun()
-    else:
-        st.warning("검색 결과가 없습니다.")
+            if total_count > st.session_state.load_count:
+                if st.button(f"🔽 나머지 {total_count - st.session_state.load_count:,}개 더보기"):
+                    st.session_state.load_count += 100
+                    st.rerun()
+        else:
+            st.warning("검색 결과가 없습니다.")
+    except Exception as e:
+        st.error(f"데이터를 불러오는 중 오류가 발생했습니다: {e}")
     
     conn.close()
 
