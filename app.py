@@ -2,8 +2,18 @@ import streamlit as st
 import sqlite3
 import pandas as pd
 
-# 1. 페이지 설정
+# 1. 페이지 설정 (아이콘과 메뉴 숨기기 설정 추가)
 st.set_page_config(page_title="상품 카테고리 검색기", layout="wide")
+
+# --- [추가] CSS: 상단 Fork 아이콘 및 하단 Streamlit 메뉴 숨기기 ---
+st.markdown("""
+    <style>
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    .stAppDeployButton {display:none;}
+    </style>
+    """, unsafe_allow_html=True)
 
 # --- 최상단 앵커 (Top 버튼용) ---
 st.markdown('<div id="top"></div>', unsafe_allow_html=True)
@@ -11,7 +21,7 @@ st.markdown('<div id="top"></div>', unsafe_allow_html=True)
 # ---------------------------------------------------------
 # [수정 완료] 새로운 테이블 정보 반영
 DB_FILE = '상품검색 Ver3.db' 
-TABLE_NAME = '"상품검색v4 260305"'  # 이미지의 핑크색 박스 이름으로 교체
+TABLE_NAME = '"상품검색v4 260305"' 
 # ---------------------------------------------------------
 
 def get_connection():
@@ -22,7 +32,7 @@ def get_connection():
         st.error(f"❌ DB 연결 실패: {e}")
         return None
 
-# 카테고리 매핑 데이터 (제시해주신 리스트 전체)
+# 카테고리 매핑 데이터 (전체 유지)
 category_data = {
     "전체": "ALL", "국내배송 특가 ~70%": "CATE128", "개런티": "CATE117", "H1": "CATE72", "H2": "CATE73", "H3": "CATE74", 
     "CC 넘버원": "CATE75", "CC 티무역": "CATE76", "CC 팬더": "CATE77", "CC 나비/기타": "CATE78", "CC 일반": "CATE80",
@@ -64,7 +74,6 @@ if keyword or selected_code != 'ALL':
         if 'load_count' not in st.session_state:
             st.session_state.load_count = 100
 
-        # 새로운 테이블 이름으로 데이터 조회
         query = f'SELECT * FROM {TABLE_NAME} {where_clause} LIMIT {st.session_state.load_count}'
         df = pd.read_sql(query, conn)
 
@@ -77,7 +86,6 @@ if keyword or selected_code != 'ALL':
                         st.image(row['대표이미지URL'], use_container_width=True)
                 with res_col2:
                     st.subheader(row['상품명'])
-                    # '원산지 :' 텍스트 없이 내용만 출력
                     st.write(f"**🔢 번호:** `{row['상품번호']}` | {row['원산지']}")
                     st.write(f"**📂 카테고리:** {selected_name} ({row.get('카테고리ID', '')})")
                     st.link_button("🔗 상세페이지 바로가기", row['상품URL'])
@@ -91,7 +99,7 @@ if keyword or selected_code != 'ALL':
             st.warning("검색 결과가 없습니다.")
         conn.close()
 
-# --- 맨 위로 이동 버튼 ---
+# --- 맨 위로 이동 버튼 (CSS 스타일) ---
 st.markdown("""
     <style>
     .top-btn { position: fixed; bottom: 30px; right: 30px; z-index: 999; background: white; border: 2px solid black; 
