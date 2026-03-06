@@ -59,7 +59,7 @@ def get_connection():
 # 카테고리 매핑 데이터
 category_data = {
     "전체": "ALL", "개런티": "CATE117", "H1": "CATE72", "H2": "CATE73", "H3": "CATE74", 
-    "CC 넘버원": "CATE75", "CC 티무역": "CATE76", "C오후 7:34 2026-03-05C 팬더": "CATE77", "CC 나비/기타": "CATE78", "CC 일반": "CATE80",
+    "CC 넘버원": "CATE75", "CC 티무역": "CATE76", "CC 팬더": "CATE77", "CC 나비/기타": "CATE78", "CC 일반": "CATE80",
     "[고퀄]기타 브랜드": "CATE79", "PD": "CATE84", "LV": "CATE85", "CD": "CATE86", "CL": "CATE87", "GY": "CATE88", 
     "LP": "CATE89", "BV": "CATE90", "MIU": "CATE91", "YSL": "CATE92", "DV": "CATE93", "THE ROW": "CATE116", 
     "GG": "CATE95", "FF": "CATE94", "BL": "CATE97", "BBR": "CATE98", "LW": "CATE100", "VT": "CATE99", "CHL": "CATE96", 
@@ -121,7 +121,8 @@ if conn:
                 res_col1, res_col2 = st.columns([1, 4])
                 with res_col1:
                     if row.get('대표이미지URL'):
-                        st.image(row['대표이미지URL'], use_container_width=True)
+                        # --- [수정 부분] use_container_width=True를 width="stretch"로 변경 ---
+                        st.image(row['대표이미지URL'], width="stretch")
                 with res_col2:
                     st.markdown(f"### {row['상품명'] if '상품명' in row else ''}")
                     st.write(f"**🔢 번호:** `{row['상품번호']}` | {row['원산지']}")
