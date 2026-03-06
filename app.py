@@ -14,10 +14,10 @@ st.markdown("""
     [data-testid="stToolbar"] { display: none !important; }
     .stApp { margin-top: -50px; }
 
-    /* --- [수정] 위로 가기 버튼 위치 상향 조정 (80px) --- */
+    /* 위로 가기 버튼 스타일 */
     .top-btn { 
         position: fixed; 
-        bottom: 80px; /* 기존 30px에서 80px로 올려서 가려짐 방지 */
+        bottom: 80px; 
         right: 30px; 
         z-index: 999; 
         background: white; 
@@ -37,15 +37,14 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 최상단 앵커 (Top 버튼용) ---
+# 최상단 앵커 및 Top 버튼
 st.markdown('<div id="top"></div>', unsafe_allow_html=True)
-# 버튼 링크 HTML 배치
 st.markdown('<a class="top-btn" href="#top">↑</a>', unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# [정보 설정] 현재 사용 중인 DB 및 테이블 정보
+# [정보 설정] DB 및 테이블 정보
 DB_FILE = '상품검색 V4.db' 
-TABLE_NAME = '"상품검색v4 260305"' 
+TABLE_NAME = '"상품검색v4 260306"' 
 # ---------------------------------------------------------
 
 def get_connection():
@@ -74,7 +73,7 @@ category_data = {
 
 st.title("🔍 상품 카테고리 통합 검색기")
 
-# 4. 검색 영역 (1:3 비율)
+# 4. 검색 영역
 col_cat, col_keyword = st.columns([1, 3])
 
 with col_cat:
@@ -83,9 +82,14 @@ with col_cat:
 with col_keyword:
     keyword = st.text_input("🔎 검색어 입력", placeholder="엔터만 치면 전체를 보여줍니다.")
 
+st.divider()
+
 # 5. 데이터 검색 및 출력 로직
 conn = get_connection()
 if conn:
+    if 'load_count' not in st.session_state:
+        st.session_state.load_count = 100
+
     conditions = []
     if keyword:
         k_list = keyword.split()
@@ -93,27 +97,21 @@ if conn:
         conditions.append(f"({k_cond})")
     else:
         conditions.append("1=1")
+        
     if selected_code != 'ALL':
         conditions.append(f'"카테고리ID" LIKE "%{selected_code}%"')
 
     where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
     
-    # --- 전체 개수 파악 ---
     try:
+        # 전체 개수 확인
         count_query = f'SELECT COUNT(*) FROM {TABLE_NAME} {where_clause}'
         total_count = pd.read_sql(count_query, conn).iloc[0, 0]
-    except:
-        total_count = 0
 
-    # --- 화면에 표시할 데이터만 가져오기 ---
-    if 'load_count' not in st.session_state:
-        st.session_state.load_count = 100
-
-    try:
+        # 데이터 로드
         query = f'SELECT * FROM {TABLE_NAME} {where_clause} LIMIT {st.session_state.load_count}'
         df = pd.read_sql(query, conn)
 
-        # 6. 결과 출력
         if total_count > 0:
             st.info(f"✅ **{selected_name}** 검색 결과: **{total_count:,}**건 (현재 {len(df)}개 표시 중)")
             
@@ -121,14 +119,14 @@ if conn:
                 res_col1, res_col2 = st.columns([1, 4])
                 with res_col1:
                     if row.get('대표이미지URL'):
-                        # --- [수정 부분] use_container_width=True를 width="stretch"로 변경 ---
-                        st.image(row['대표이미지URL'], width="stretch")
+                        st.image(row['대표이미지URL']) 
                 with res_col2:
                     st.markdown(f"### {row['상품명'] if '상품명' in row else ''}")
                     st.write(f"**🔢 번호:** `{row['상품번호']}` | {row['원산지']}")
                     st.link_button("🔗 상세페이지 바로가기", row['상품URL'])
                 st.divider()
 
+            # 더보기 버튼 (데이터가 더 있을 때만 표시)
             if total_count > st.session_state.load_count:
                 if st.button(f"🔽 나머지 {total_count - st.session_state.load_count:,}개 더보기"):
                     st.session_state.load_count += 100
