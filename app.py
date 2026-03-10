@@ -91,12 +91,15 @@ if conn:
         st.session_state.load_count = 100
 
     conditions = []
+
+       # --- [수정 구간] 숨김, 품절 상품 제외 조건 추가 ---
+    conditions.append('"판매상태" NOT IN ("숨김", "품절")')
+    # ----------------------------------------------
+
     if keyword:
         k_list = keyword.split()
         k_cond = " AND ".join([f'("상품명" LIKE "%{k}%" OR "원산지" LIKE "%{k}%" OR "상품번호" LIKE "%{k}%")' for k in k_list])
         conditions.append(f"({k_cond})")
-    else:
-        conditions.append("1=1")
         
     if selected_code != 'ALL':
         conditions.append(f'"카테고리ID" LIKE "%{selected_code}%"')
@@ -123,6 +126,8 @@ if conn:
                 with res_col2:
                     st.markdown(f"### {row['상품명'] if '상품명' in row else ''}")
                     st.write(f"**🔢 번호:** `{row['상품번호']}` | {row['원산지']}")
+                    # 만약 상태를 표시하고 싶다면 아래 주석 해제
+                    # st.write(f"**상태:** {row['판매상태']}") 
                     st.link_button("🔗 상세페이지 바로가기", row['상품URL'])
                 st.divider()
 
@@ -132,7 +137,7 @@ if conn:
                     st.session_state.load_count += 100
                     st.rerun()
         else:
-            st.warning("검색 결과가 없습니다.")
+            st.warning("검색 결과가 없습니다 (숨김/품절 상품 제외).")
     except Exception as e:
         st.error(f"데이터를 불러오는 중 오류가 발생했습니다: {e}")
     
