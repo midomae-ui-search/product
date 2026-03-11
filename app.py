@@ -64,7 +64,7 @@ st.markdown('<a class="top-btn" href="#top">↑</a>', unsafe_allow_html=True)
 # ---------------------------------------------------------
 # [정보 설정] DB 및 테이블 정보
 DB_FILE = '상품검색 V4.db' 
-TABLE_NAME = '"상품검색v4 260311"' 
+TABLE_NAME = '"상품검색v4 260311.1"' 
 # ---------------------------------------------------------
 
 def get_connection():
