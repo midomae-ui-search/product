@@ -11,13 +11,11 @@ if "search_input" not in st.session_state:
 def clear_search():
     st.session_state.search_input = ""
 
-# 2. CSS: 버튼 수평 정렬 보정
+# 2. CSS: 버튼 정렬 및 스타일
 st.markdown("""
     <style>
     header, footer {visibility: hidden !important;}
     .stApp { margin-top: -50px; }
-    
-    /* X 버튼 위치를 검색창 박스 높이에 맞춤 */
     div[data-testid="stColumn"]:nth-child(3) button {
         margin-top: 32px !important; 
         height: 42px;
@@ -30,6 +28,14 @@ st.markdown("""
 DB_FILE = '상품검색 V4.db' 
 TABLE_NAME = '"상품검색v4 260311"' 
 # ---------------------------------------------------------
+
+# [최적화 1] 데이터 불러오기 캐싱 (서버 메모리에 저장하여 1초 이내 응답)
+@st.cache_data(ttl=3600) # 1시간 동안 데이터를 메모리에 유지
+def get_all_data():
+    conn = sqlite3.connect(DB_FILE)
+    df = pd.read_sql(f'SELECT * FROM {TABLE_NAME} WHERE "판매상태" NOT IN ("숨김", "품절")', conn)
+    conn.close()
+    return df
 
 category_data = {
     "전체": "ALL", "개런티": "CATE117", "H1": "CATE72", "H2": "CATE73", "H3": "CATE74", 
@@ -48,75 +54,58 @@ category_data = {
 
 st.title("🔍 상품 카테고리 통합 검색기")
 
-# --- 검색 영역 ---
-col_cat, col_keyword, col_clear = st.columns([2, 5, 1])
-
+col_cat, col_keyword, col_clear = st.columns([1.5, 4, 0.5])
 with col_cat:
     selected_name = st.selectbox("📂 카테고리", list(category_data.keys()))
     selected_code = category_data[selected_name]
-
 with col_keyword:
-    keyword = st.text_input("🔎 검색어 입력", key="search_input", placeholder="검색어를 입력하고 엔터를 치세요.")
-
+    keyword = st.text_input("🔎 검색어 입력", key="search_input", placeholder="검색어 입력 후 엔터")
 with col_clear:
     st.button("✖️", on_click=clear_search)
 
 st.divider()
 
-# 3. 데이터 로드 및 일반 텍스트 검색
-def get_connection():
-    return sqlite3.connect(DB_FILE)
+# [최적화 2] 데이터 필터링 로직 개선
+full_df = get_all_data()
 
-conn = get_connection()
-if conn:
-    if 'load_count' not in st.session_state: 
-        st.session_state.load_count = 100
-        
-    conditions = ['"판매상태" NOT IN ("숨김", "품절")']
-    
-    # 일반 텍스트 키워드 검색 조건 (SQL 단계에서 필터링하여 속도 향상)
-    if keyword.strip():
-        k_list = keyword.split()
-        for k in k_list:
-            conditions.append(f'("상품명" LIKE "%{k}%" OR "상품번호" LIKE "%{k}%")')
-    
-    if selected_code != 'ALL':
-        conditions.append(f'"카테고리ID" LIKE "%{selected_code}%"')
-    
-    where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
-    
-    try:
-        # 검색 결과 개수 확인
-        count_df = pd.read_sql(f'SELECT COUNT(*) as count FROM {TABLE_NAME} {where_clause}', conn)
-        total_count = count_df.iloc[0]['count']
+if 'load_count' not in st.session_state:
+    st.session_state.load_count = 100
 
-        # 실제 표시할 데이터만 로드 (LIMIT 활용으로 속도 최적화)
-        query = f'SELECT * FROM {TABLE_NAME} {where_clause} LIMIT {st.session_state.load_count}'
-        df = pd.read_sql(query, conn)
+# 검색 필터 적용
+filtered_df = full_df.copy()
 
-        if total_count > 0:
-            st.info(f"✅ 검색 결과: **{total_count:,}**건 (현재 {len(df)}개 표시 중)")
-            
-            for _, row in df.iterrows():
-                res_col1, res_col2 = st.columns([1, 4])
-                with res_col1:
-                    if row.get('대표이미지URL'): 
-                        st.image(row['대표이미지URL'], use_container_width=True) 
-                with res_col2:
-                    st.markdown(f"### {row.get('상품명', '상품명 없음')}")
-                    st.write(f"**🔢 번호:** `{row.get('상품번호', '-')}` | **원산지:** {row.get('원산지', '-')}")
-                    st.link_button("🔗 상세페이지 바로가기", row.get('상품URL', '#'))
-                st.divider()
+if selected_code != 'ALL':
+    filtered_df = filtered_df[filtered_df['카테고리ID'].str.contains(selected_code, na=False)]
 
-            # '더보기' 버튼 로직
-            if total_count > st.session_state.load_count:
-                if st.button(f"🔽 나머지 {total_count - st.session_state.load_count:,}개 더보기"):
-                    st.session_state.load_count += 100
-                    st.rerun()
-        else:
-            st.warning("검색 결과가 없습니다.")
-            
-    except Exception as e:
-        st.error(f"데이터를 불러오는 중 오류가 발생했습니다: {e}")
-    finally:
-        conn.close()
+if keyword.strip():
+    k_list = keyword.split()
+    for k in k_list:
+        # 상품명, 원산지, 상품번호 중 하나라도 포함되면 필터링
+        filtered_df = filtered_df[
+            filtered_df['상품명'].str.contains(k, case=False, na=False) |
+            filtered_df['상품번호'].astype(str).str.contains(k, na=False)
+        ]
+
+total_count = len(filtered_df)
+df_to_show = filtered_df.head(st.session_state.load_count)
+
+# 4. 결과 출력
+if total_count > 0:
+    st.info(f"✅ 검색 결과: **{total_count:,}**건")
+    for _, row in df_to_show.iterrows():
+        res_col1, res_col2 = st.columns([1, 4])
+        with res_col1:
+            if row.get('대표이미지URL'): 
+                st.image(row['대표이미지URL'], use_container_width=True) 
+        with res_col2:
+            st.markdown(f"### {row.get('상품명', '')}")
+            st.write(f"**🔢 번호:** `{row.get('상품번호', '')}`")
+            st.link_button("🔗 상세페이지 바로가기", row.get('상품URL', '#'))
+        st.divider()
+
+    if total_count > st.session_state.load_count:
+        if st.button("더보기"):
+            st.session_state.load_count += 100
+            st.rerun()
+else:
+    st.warning("검색 결과가 없습니다.")
