@@ -2,25 +2,7 @@ import streamlit as st
 import sqlite3
 import pandas as pd
 
-# 1. 한글 초성 처리 함수들
-def get_chosung(text):
-    CHOSUNG_LIST = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ']
-    result = []
-    for char in str(text):
-        if '가' <= char <= '힣':
-            char_code = ord(char) - ord('가')
-            chosung_index = char_code // 588
-            result.append(CHOSUNG_LIST[chosung_index])
-        else:
-            result.append(char)
-    return "".join(result)
-
-def check_is_chosung(word):
-    if not word: return False
-    CHOSUNG_SET = set(['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'])
-    return all(char in CHOSUNG_SET for char in word)
-
-# 2. 페이지 설정 및 세션 초기화
+# 1. 페이지 설정 및 세션 초기화
 st.set_page_config(page_title="상품 카테고리 통합 검색기", layout="wide")
 
 if "search_input" not in st.session_state:
@@ -29,13 +11,13 @@ if "search_input" not in st.session_state:
 def clear_search():
     st.session_state.search_input = ""
 
-# 3. CSS: 에러 방지 및 버튼 수평 정렬 (마진 값 상향)
+# 2. CSS: 버튼 수평 정렬 보정
 st.markdown("""
     <style>
     header, footer {visibility: hidden !important;}
     .stApp { margin-top: -50px; }
     
-    /* X 버튼을 검색창 박스 높이에 맞추기 위해 강제로 아래로 내림 */
+    /* X 버튼 위치를 검색창 박스 높이에 맞춤 */
     div[data-testid="stColumn"]:nth-child(3) button {
         margin-top: 32px !important; 
         height: 42px;
@@ -66,7 +48,7 @@ category_data = {
 
 st.title("🔍 상품 카테고리 통합 검색기")
 
-# --- 검색 영역 (컬럼 비율 명시) ---
+# --- 검색 영역 ---
 col_cat, col_keyword, col_clear = st.columns([2, 5, 1])
 
 with col_cat:
@@ -74,50 +56,67 @@ with col_cat:
     selected_code = category_data[selected_name]
 
 with col_keyword:
-    keyword = st.text_input("🔎 검색어 입력", key="search_input", placeholder="엔터시 전체보기 가능,  초성+단어 조합 가능")
+    keyword = st.text_input("🔎 검색어 입력", key="search_input", placeholder="검색어를 입력하고 엔터를 치세요.")
 
 with col_clear:
     st.button("✖️", on_click=clear_search)
 
 st.divider()
 
-# 4. 데이터 로드 및 검색
-conn = sqlite3.connect(DB_FILE)
+# 3. 데이터 로드 및 일반 텍스트 검색
+def get_connection():
+    return sqlite3.connect(DB_FILE)
+
+conn = get_connection()
 if conn:
-    if 'load_count' not in st.session_state: st.session_state.load_count = 100
+    if 'load_count' not in st.session_state: 
+        st.session_state.load_count = 100
+        
     conditions = ['"판매상태" NOT IN ("숨김", "품절")']
+    
+    # 일반 텍스트 키워드 검색 조건 (SQL 단계에서 필터링하여 속도 향상)
+    if keyword.strip():
+        k_list = keyword.split()
+        for k in k_list:
+            conditions.append(f'("상품명" LIKE "%{k}%" OR "상품번호" LIKE "%{k}%")')
+    
     if selected_code != 'ALL':
         conditions.append(f'"카테고리ID" LIKE "%{selected_code}%"')
     
     where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
     
     try:
-        full_df = pd.read_sql(f'SELECT * FROM {TABLE_NAME} {where_clause}', conn)
+        # 검색 결과 개수 확인
+        count_df = pd.read_sql(f'SELECT COUNT(*) as count FROM {TABLE_NAME} {where_clause}', conn)
+        total_count = count_df.iloc[0]['count']
 
-        if keyword:
-            search_terms = keyword.split()
-            def match_search(row_name):
-                name, chosung = str(row_name), get_chosung(str(row_name))
-                return all((term in chosung if check_is_chosung(term) else term in name) for term in search_terms)
-            full_df = full_df[full_df['상품명'].apply(match_search)]
-
-        total_count = len(full_df)
-        df = full_df.head(st.session_state.load_count)
+        # 실제 표시할 데이터만 로드 (LIMIT 활용으로 속도 최적화)
+        query = f'SELECT * FROM {TABLE_NAME} {where_clause} LIMIT {st.session_state.load_count}'
+        df = pd.read_sql(query, conn)
 
         if total_count > 0:
-            st.info(f"✅ 검색 결과: **{total_count:,}**건")
+            st.info(f"✅ 검색 결과: **{total_count:,}**건 (현재 {len(df)}개 표시 중)")
+            
             for _, row in df.iterrows():
-                # [수정] st.columns()에 [1, 4]를 넣어 'spec' 에러 해결
                 res_col1, res_col2 = st.columns([1, 4])
                 with res_col1:
-                    if row.get('대표이미지URL'): st.image(row['대표이미지URL']) 
+                    if row.get('대표이미지URL'): 
+                        st.image(row['대표이미지URL'], use_container_width=True) 
                 with res_col2:
-                    st.markdown(f"### {row.get('상품명', '')}")
-                    st.write(f"**🔢 번호:** `{row.get('상품번호', '')}`")
+                    st.markdown(f"### {row.get('상품명', '상품명 없음')}")
+                    st.write(f"**🔢 번호:** `{row.get('상품번호', '-')}` | **원산지:** {row.get('원산지', '-')}")
                     st.link_button("🔗 상세페이지 바로가기", row.get('상품URL', '#'))
                 st.divider()
+
+            # '더보기' 버튼 로직
+            if total_count > st.session_state.load_count:
+                if st.button(f"🔽 나머지 {total_count - st.session_state.load_count:,}개 더보기"):
+                    st.session_state.load_count += 100
+                    st.rerun()
         else:
             st.warning("검색 결과가 없습니다.")
+            
     except Exception as e:
-        st.error(f"오류 발생: {e}")
-    conn.close()
+        st.error(f"데이터를 불러오는 중 오류가 발생했습니다: {e}")
+    finally:
+        conn.close()
