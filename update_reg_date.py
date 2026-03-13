@@ -12,8 +12,8 @@ def get_v2_token_final():
     
     # 아임웹 V2가 요구하는 정확한 데이터 구조
     payload = {
-        "key": API_KEY,
-        "secret": API_SECRET
+        "client_id": API_KEY,      # 'key'를 'client_id'로 변경
+        "client_secret": API_SECRET # 'secret'을 'client_secret'으로 변경
     }
     
     # 헤더에 JSON 형식임을 명시 (400 HTML 방지 핵심)
