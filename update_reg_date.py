@@ -8,15 +8,15 @@ API_SECRET = os.environ.get('IMWEB_API_SECRET')
 DB_FILE = '상품검색 V4.db' 
 
 def get_v2_token():
-    """V2 전용 인증 토큰 발급 (400 에러 해결 버전)"""
-    print("🔑 V2 토큰 발급 시도...")
-    url = "https://api.imweb.me" 
+    # 수정 전: url = "https://api.imweb.me"
+    url = "https://api.imweb.me"  # /v2/auth 추가
     
-    # 400 에러 방지를 위해 params(쿼리 스트링) 방식으로 전달
     params = {
         "key": API_KEY,
         "secret": API_SECRET
     }
+    # ... 이하 동일
+
     
     try:
         res = requests.post(url, params=params)
