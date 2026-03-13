@@ -1,14 +1,14 @@
 import requests
 import os
 
-# 코드 상단에 추가 (테스트용)
-print(f"DEBUG: Key length is {len(API_KEY) if API_KEY else 0}")
-print(f"DEBUG: Secret length is {len(API_SECRET) if API_SECRET else 0}")
-
 # 1. 설정 (GitHub Secrets)
 API_KEY = os.environ.get('IMWEB_API_KEY')
 API_SECRET = os.environ.get('IMWEB_API_SECRET')
 DB_FILE = '상품검색 V4.db' 
+
+# 코드 상단에 추가 (테스트용)
+print(f"DEBUG: Key length is {len(API_KEY) if API_KEY else 0}")
+print(f"DEBUG: Secret length is {len(API_SECRET) if API_SECRET else 0}")
 
 def get_v2_token_final():
     print("🔑 미도매 V2 인증 시도 중...")
