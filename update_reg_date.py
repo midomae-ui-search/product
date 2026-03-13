@@ -8,32 +8,31 @@ API_SECRET = os.environ.get('IMWEB_API_SECRET')
 DB_FILE = '상품검색 V4.db' 
 
 def get_v2_token():
-    """V2 전용 인증 토큰 발급 (JSON Body 방식 수정)"""
+    """V2 전용 인증 토큰 발급 (정확한 엔드포인트 및 JSON 방식)"""
     print("🔑 V2 토큰 발급 시도...")
-    # 경로 끝에 /v2/auth를 반드시 추가해야 합니다.
+    # 아임웹 V2는 반드시 뒤에 /v2/auth 경로가 있어야 합니다.
     url = "https://api.imweb.me" 
     
-    # 400 에러 방지: params가 아니라 json(Body) 방식으로 전달
+    # 아임웹 V2는 데이터를 JSON 바디로 받습니다.
     payload = {
         "key": API_KEY,
         "secret": API_SECRET
     }
     
     try:
-        # json=payload로 데이터 전송
         res = requests.post(url, json=payload)
         if res.status_code == 200:
             data = res.json()
-            # V2 응답 구조: {'access_token': '...', 'expire_at': ...}
+            # V2 응답의 토큰 필드명은 access_token입니다.
             token = data.get('access_token')
             if token:
                 print("✅ V2 토큰 발급 성공!")
                 return token
             else:
-                print(f"❌ 토큰 추출 실패 (응답 구조 확인): {data}")
+                print(f"❌ 토큰 추출 실패: {data}")
                 return None
         else:
-            # 여기서 400 HTML이 출력된다면 URL이나 Payload 형식이 틀린 것임
+            # 여기서 HTML이 출력된다면 URL 오타일 확률이 높습니다.
             print(f"❌ 인증 실패: {res.status_code}, {res.text}")
             return None
     except Exception as e:
@@ -41,13 +40,13 @@ def get_v2_token():
         return None
 
 def get_imweb_products_v2(token):
-    """V2 API로 상품 목록 가져오기 (Endpoint 수정)"""
+    """V2 API로 상품 목록 가져오기"""
     print("📦 상품 목록 조회 중...")
-    # 상품 조회를 위한 정확한 경로 추가
+    # 상품 목록을 가져오는 정확한 경로
     url = "https://api.imweb.me"
     
     headers = {
-        "Authorization": token,  # V2는 보통 Bearer 없이 토큰값만 넣습니다.
+        "Authorization": token,  # V2는 보통 Bearer 없이 토큰만 넣습니다.
         "Content-Type": "application/json"
     }
     
@@ -56,6 +55,11 @@ def get_imweb_products_v2(token):
         if res.status_code == 200:
             # V2 응답 구조: {'data': {'list': [...]}}
             items = res.json().get('data', {}).get('list', [])
+            
+            # 스크린샷의 data-id(상품번호)가 잘 오는지 첫 번째 데이터 확인
+            if items:
+                print(f"📌 첫 번째 상품 샘플 - 번호: {items[0].get('prod_no')}, 이름: {items[0].get('prod_name')}")
+            
             print(f"📋 총 {len(items)}개의 상품을 아임웹에서 가져왔습니다.")
             return items
         else:
@@ -82,7 +86,7 @@ def update_db():
         conn = sqlite3.connect(DB_FILE)
         cursor = conn.cursor()
         
-        # 테이블 이름 (공백/한글 포함 시 따옴표 처리)
+        # 테이블 이름 (스크린샷 기준 날짜 반영)
         table_name = '"상품검색v4 260313"' 
 
         # '등록일' 컬럼 자동 생성 시도
@@ -94,12 +98,12 @@ def update_db():
 
         update_count = 0
         for p in products:
-            # V2 응답 필드명 확인 (prod_no -> prod_no)
+            # 스크린샷의 data-id에 해당하는 값이 prod_no입니다.
             p_id = p.get('prod_no') 
-            reg_date = p.get('reg_date') # 유닉스 타임스탬프 또는 문자열
+            reg_date = p.get('reg_date') # 아임웹에서 준 등록일
             
             if p_id and reg_date:
-                # DB 업데이트 실행
+                # DB의 '상품번호' 컬럼과 아임웹의 'prod_no'를 대조하여 등록일 업데이트
                 sql = f"UPDATE {table_name} SET 등록일 = ? WHERE CAST(상품번호 AS TEXT) = ?"
                 cursor.execute(sql, (str(reg_date), str(p_id)))
                 if cursor.rowcount > 0:
@@ -107,7 +111,7 @@ def update_db():
 
         conn.commit()
         conn.close()
-        print(f"✨ 작업 완료! {table_name} 테이블의 {update_count}개 상품 업데이트됨.")
+        print(f"✨ 작업 완료! {table_name} 테이블의 {update_count}개 상품 등록일 업데이트됨.")
 
     except Exception as e:
         print(f"❌ DB 작업 중 오류: {e}")
@@ -116,4 +120,4 @@ if __name__ == "__main__":
     if API_KEY and API_SECRET:
         update_db()
     else:
-        print("❌ GitHub Secrets 설정 확인 필요 (API_KEY, API_SECRET)")
+        print("❌ GitHub Secrets 설정 확인 필요 (IMWEB_API_KEY, IMWEB_API_SECRET)")
