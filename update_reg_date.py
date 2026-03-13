@@ -37,14 +37,15 @@ def get_v2_token():
         return None
 
 def get_imweb_products_v2(token):
-    """V2 API로 상품 목록 가져오기"""
-    print("📦 상품 목록 조회 중...")
-    url = "https://api.imweb.me"
+    # 수정 전: url = "https://api.imweb.me"
+    url = "https://api.imweb.me"  # 경로 추가
     
     headers = {
-        "Authorization": f"Bearer {token}",
+        "Authorization": token,  # 아임웹 V2는 Bearer를 생략하거나 포함하는 형식이 버전에 따라 다를 수 있으니 확인 필요
         "Content-Type": "application/json"
     }
+    # ... 이하 동일
+
     
     try:
         res = requests.get(url, headers=headers)
