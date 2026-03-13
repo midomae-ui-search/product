@@ -8,7 +8,7 @@ API_SECRET = os.environ.get('IMWEB_API_SECRET')
 def get_v2_token_final():
     print("🔑 미도매 V2 인증 시도 중...")
     # [중요] V2 공식 엔드포인트 주소
-    url = "https://api.imweb.me" 
+    url = "https://api.imweb.me/v2/auth/token" 
     
     # 아임웹 V2가 요구하는 정확한 데이터 구조
     payload = {
