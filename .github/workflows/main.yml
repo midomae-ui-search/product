@@ -26,7 +26,7 @@ jobs:
         env:
           IMWEB_API_KEY: ${{ secrets.IMWEB_API_KEY }}
           IMWEB_API_SECRET: ${{ secrets.IMWEB_API_SECRET }} 
-        run: run: python update_reg_date.py
+        run: python update_reg_date.py
         
       - name: Commit and Push
         run: |
