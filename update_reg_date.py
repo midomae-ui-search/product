@@ -13,7 +13,7 @@ def get_v2_token():
     
     # [중요] 아임웹 V2는 본인 도메인 앞에 api. 을 붙여 호출하는 것이 정석입니다.
     # 만약 api.midomae.com 이 안되면 다시 api.imweb.me 로 시도합니다.
-    url = "https://api.midomae.com" 
+    url = "https://api.midomae.com/admin/shopping/product" 
     
     payload = {
         "key": API_KEY,
@@ -27,7 +27,7 @@ def get_v2_token():
         # 만약 404나 에러가 나면 공식 API 서버로 재시도
         if res.status_code != 200:
             print("🔄 도메인 호출 실패, 공식 API 서버로 재시도...")
-            url = "https://api.imweb.me"
+            url = "https://api.midomae.com/admin/shopping/product"
             res = requests.post(url, json=payload)
 
         if res.status_code == 200:
@@ -47,7 +47,7 @@ def get_imweb_products_v2(token):
     """V2 API로 상품 목록 가져오기"""
     print("📦 상품 목록 조회 중...")
     # 토큰 발급에 성공한 도메인과 동일하게 맞춥니다.
-    url = "https://api.midomae.com"
+    url = "https://api.midomae.com/admin/shopping/product" 
     
     headers = {
         "Authorization": token, 
@@ -57,7 +57,7 @@ def get_imweb_products_v2(token):
     try:
         res = requests.get(url, headers=headers)
         if res.status_code != 200:
-            url = "https://api.imweb.me"
+            url = "https://api.midomae.com/admin/shopping/product" 
             res = requests.get(url, headers=headers)
 
         if res.status_code == 200:
