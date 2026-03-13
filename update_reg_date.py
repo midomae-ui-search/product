@@ -2,8 +2,8 @@ import requests
 import os
 
 # 1. 설정 (GitHub Secrets)
-API_KEY = 7cbf96313c3a2d27e9c39ff6b3f7a803e565243491('IMWEB_API_KEY')
-API_SECRET = 0ab9d00ce02cd9a640d841	('IMWEB_API_SECRET')
+API_KEY = os.environ.get('IMWEB_API_KEY')
+API_SECRET = os.environ.get	('IMWEB_API_SECRET')
 
 def get_v2_token_final():
     print("🔑 미도매 V2 인증 시도 중...")
