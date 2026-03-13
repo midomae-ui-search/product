@@ -9,7 +9,7 @@ DB_FILE = '상품검색 V4.db'
 
 def get_v2_token():
     """본인 사이트 도메인을 이용한 V2 토큰 발급"""
-    print("🔑 V2 토큰 발급 시도 (midomae.com)...")
+    print("🔑 V2 토큰 발급 시도 (https://api.midomae.com/admin/shopping/product)...")
     
     # [중요] 아임웹 V2는 본인 도메인 앞에 api. 을 붙여 호출하는 것이 정석입니다.
     # 만약 api.midomae.com 이 안되면 다시 api.imweb.me 로 시도합니다.
