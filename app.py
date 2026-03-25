@@ -157,7 +157,7 @@ if conn:
                         st.image(row['대표이미지URL']) 
                 with res_col2:
                     st.markdown(f"### {row['상품명']}")
-                    st.write(f"**{row['원산지']}")
+                    st.write(f"{row['원산지']}")
                     st.link_button("🔗 상세페이지 바로가기", row['상품URL'])
                 st.divider()
 
