@@ -132,7 +132,7 @@ if conn:
 
     if keyword:
         k_list = keyword.split()
-        k_cond = " AND ".join([f'("상품명" LIKE "%{k}%" OR "원산지" LIKE "%{k}%" OR "상품번호" LIKE "%{k}%")' for k in k_list])
+        k_cond = " AND ".join([f'("상품명" LIKE "%{k}%" OR "원산지" LIKE "%{k}%")' for k in k_list])
         conditions.append(f"({k_cond})")
         
     if selected_code != 'ALL':
