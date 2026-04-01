@@ -3,7 +3,7 @@ import sqlite3
 import pandas as pd
 
 # 1. 페이지 설정 및 디자인 적용
-st.set_page_config(page_title="상품 카테고리 통합 검색기", layout="wide")
+st.set_page_config(page_title="상품 검색기", layout="wide")
 
 st.markdown("""
     <style>
@@ -91,38 +91,79 @@ category_data = {
     "맨즈 벨트/잡화": "CATE139"
 }
 
-st.title("🔍 상품 카테고리 통합 검색기")
+# font-size를 24px 정도로 줄이고 간격을 조정합니다.
+st.markdown("<h2 style='font-size: 24px; margin-bottom: 10px;'>🔍 상품 검색기</h2>", unsafe_allow_html=True)
+
 
 # --- 검색어 초기화 로직 ---
+# 검색 UI 최적화: 모바일 가로 유지 및 버튼 간격 조정
+st.markdown("""
+    <style>
+    /* 1. 모바일에서도 컬럼이 밑으로 떨어지지 않게 강제 가로 배치 */
+    [data-testid="column"] {
+        flex: 1 1 0% !important;
+        min-width: 0px !important;
+    }
+
+    /* 이미지와 텍스트 사이 간격 미세 조정 */
+    [data-testid="column"]:nth-of-type(1) {
+        padding-right: 10px !important;
+    }
+
+    /* 2. 입력창과 버튼 사이의 간격(여백) 확보 */
+    [data-testid="column"] {
+        padding-right: 5px !important;
+    }
+
+    /* 3. 라벨 숨겨서 위쪽 여백 제거 */
+    div[data-testid="stSelectbox"] label, div[data-testid="stTextInput"] label {
+        display: none !important;
+    }
+
+    /* 4. 버튼 위치 수직 중앙 맞춤 */
+    div[data-testid="stButton"] {
+        margin-top: 0px !important;
+        display: flex;
+        justify-content: center;
+
+    /* 5. 버튼 크기 조절 (버튼 때문에 밀리는 경우 방지) */
+    .stButton button {
+        width: auto !important;
+        padding: 2px 10px !important;
+        font-size: 12px !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+
+
+
+
 if "keyword_val" not in st.session_state:
     st.session_state.keyword_val = ""
 
 def clear_search():
     st.session_state.keyword_val = ""
 
-# 4. 검색 영역
-col_cat, col_keyword, col_clear = st.columns([1, 2.5, 0.4])
+# 컬럼 비율: 카테고리(1) : 검색어(2.2) : X버튼(0.5)
+# gap="small"을 주어 너무 붙지 않게 설정합니다.
+col_cat, col_keyword, col_clear = st.columns([1, 2.2, 0.5], gap="small")
 
 with col_cat:
-    selected_name = st.selectbox("📂 카테고리 선택", list(category_data.keys()))
+    selected_name = st.selectbox("카테고리", list(category_data.keys()), label_visibility="collapsed")
     selected_code = category_data[selected_name]
 
 with col_keyword:
-    keyword = st.text_input(
-        "🔎 검색어 입력", 
-        placeholder="엔터만 치면 전체를 보여줍니다.",
-        key="keyword_val"
-    )
+    keyword = st.text_input("검색어", placeholder="검색어 입력", key="keyword_val", label_visibility="collapsed")
 
 with col_clear:
-    st.write(" ") # 수직 정렬용 여백
-    st.write(" ") 
-    # CSS로 블랙 원형 버튼이 적용될 버튼
     st.button("X", on_click=clear_search)
+
+# --- 여기까지 교체 ---
 
 st.markdown("""
     <div style="text-align: center; color: #ff4b4b; font-weight: bold; font-size: 20px;">
-        * 국내배송/현지오늘배송은 사이트 내 진열 목록에서 확인 부탁드립니다 :)
+        * 국내배송/현지오늘배송은 사이트 내 진열 목록에서 확인 부탁드립니다.
     </div>
     """, unsafe_allow_html=True)
 
@@ -157,14 +198,20 @@ if conn:
             st.info(f"✅ **{selected_name}** 검색 결과: **{total_count:,}**건")
             
             for _, row in df.iterrows():
-                res_col1, res_col2 = st.columns([1, 4])
+                # 이미지 컬럼 비율을 1에서 0.8로 줄여서 전체적인 크기를 축소 (0.8 : 4)
+                res_col1, res_col2 = st.columns([0.8, 4]) 
+    
                 with res_col1:
                     if row.get('대표이미지URL'):
-                        st.image(row['대표이미지URL']) 
+                        # use_container_width=False로 설정하고 width값을 주어 크기를 고정 (예: 120)
+                        st.image(row['대표이미지URL'], width=120) 
+            
                 with res_col2:
-                    st.markdown(f"### {row['상품명']}")
-                    st.write(f"{row['원산지']}")
+                    # 상품명 폰트 크기를 조금 줄여서 밸런스를 맞춤
+                    st.markdown(f"##### {row['상품명']}") 
+                    st.write(f"🌍 {row['원산지']}")
                     st.link_button("🔗 상세페이지 바로가기", row['상품URL'])
+        
                 st.divider()
 
             if total_count > st.session_state.load_count:
