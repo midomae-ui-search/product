@@ -14,7 +14,7 @@ st.markdown("""
     [data-testid="stToolbar"] { display: none !important; }
     
     /* 여기서부터 추가/수정 */
-    .stApp { margin-top: -30px !important; } /* 숫자를 -80 정도로 더 키우면 바짝 붙습니다 */
+    .stApp { margin-top: -45px !important; } /* 숫자를 -80 정도로 더 키우면 바짝 붙습니다 */
     
     .block-container {
         padding-top: 0rem !important; /* 위쪽 내부 여백 완전 제거 */
@@ -103,7 +103,7 @@ category_data = {
 }
 
 # font-size를 24px 정도로 줄이고 간격을 조정합니다.
-st.markdown("<h2 style='font-size: 24px; margin-bottom: 10px;'>🔍 상품 검색기</h2>", unsafe_allow_html=True)
+st.markdown("<h2 style='font-size: 24px; margin-bottom: -20px;'>🔍 상품 검색기</h2>", unsafe_allow_html=True)
 
 
 # --- 검색어 초기화 로직 ---
@@ -170,12 +170,12 @@ with col_clear:
 # --- 여기까지 교체 ---
 
 st.markdown("""
-    <div style="text-align: center; color: #ff4b4b; font-weight: bold; font-size: 20px;">
+    <div style="text-align: center; color: #ff4b4b; font-weight: bold; font-size: 17.5px;">
         * 국내배송/현지오늘배송은 사이트 내 진열 목록에서 확인 부탁드립니다.
     </div>
     """, unsafe_allow_html=True)
 
-st.divider()
+st.markdown("<hr style='margin-top: 16px; margin-bottom: 10px; opacity: 0.2;'>", unsafe_allow_html=True)
 
 # 5. 데이터 검색 및 출력 로직
 conn = get_connection()
@@ -206,7 +206,15 @@ if conn:
         if total_count > 0:
             # 2. 상단 검색 결과 요약 바 (배경은 어둡게 고정하되 텍스트는 흰색으로 명시)
             st.markdown(f"""
-                <div style="background-color: #31333F; padding: 10px 15px; border-radius: 8px; font-size: 14px; margin-bottom: 20px; color: #FFFFFF;">
+                  <div style="
+                    background-color: #31333F;   /* 배경색: 어두운 회색(Streamlit 기본 다크 테마색) */
+                    padding: 5px 10px;           /* 안쪽 여백: 위아래 10px, 좌우 15px */
+                    border-radius: 8px;            /* 테두리 곡률: 모서리를 8px만큼 둥글게 처리 */
+                    font-size: 14px;                /* 글자 크기: 14px */
+                    margin-top: -25px;    /* 위쪽 여백 강제 축소 (숫자가 클수록 위로 올라감) */
+                    margin-bottom: 0px;          /* 아래쪽 바깥 여백: 0으로 설정하여 다음 요소와 밀착 */
+                    color: #FFFFFF;                 /* 글자 색상: 흰색 */
+                  ">
                     ✅ <b>{selected_name}</b> 검색 결과: <b>{total_count:,}</b>건
                 </div>
             """, unsafe_allow_html=True)
