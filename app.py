@@ -231,7 +231,7 @@ if conn:
                             <div style="flex: 4;">
                                 <!-- 색상을 직접 지정하지 않고 inherit를 사용하여 시스템 테마 폰트색을 따름 -->
                                 <h5 style="margin: 0 0 8px 0; font-size: 1.1rem; font-weight: 600; color: inherit;">{row['상품명']}</h5>
-                                <p style="margin: 0; font-size: 14px; opacity: 0.7; color: inherit;">🌍 {row['원산지']}</p>
+                                <p style="margin: 0; font-size: 14px; opacity: 0.7; color: inherit;"> {row['원산지']}</p>
                             </div>
                         </div>
                     </a>
