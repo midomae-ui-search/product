@@ -204,9 +204,9 @@ if conn:
         df = pd.read_sql(query, conn)
 
         if total_count > 0:
-            # 2. 상단 검색 결과 요약 바 (배경색과 텍스트색 조정)
+            # 2. 상단 검색 결과 요약 바 (배경은 어둡게 고정하되 텍스트는 흰색으로 명시)
             st.markdown(f"""
-                <div style="background-color: #262730; padding: 10px 15px; border-radius: 8px; font-size: 14px; margin-bottom: 20px; border: 1px solid #464855; color: #ffffff;">
+                <div style="background-color: #31333F; padding: 10px 15px; border-radius: 8px; font-size: 14px; margin-bottom: 20px; color: #FFFFFF;">
                     ✅ <b>{selected_name}</b> 검색 결과: <b>{total_count:,}</b>건
                 </div>
             """, unsafe_allow_html=True)
@@ -222,16 +222,16 @@ if conn:
                             display: flex; 
                             gap: 20px; 
                             padding: 15px 0; 
-                            border-bottom: 1px solid #464855; 
+                            border-bottom: 1px solid rgba(128, 128, 128, 0.2); 
                             align-items: center;
                             cursor: pointer;">
                             <div style="flex: 1; min-width: 140px; max-width: 160px;">
                                 <img src="{img_url}" style="width: 100%; border-radius: 8px; aspect-ratio: 1/1; object-fit: cover;">
                             </div>
                             <div style="flex: 4;">
-                                <!-- 폰트 색상을 흰색(#FFFFFF) 또는 연한 회색(#E0E0E0)으로 변경 -->
-                                <h5 style="margin: 0 0 8px 0; font-size: 1.1rem; color: #FFFFFF; font-weight: 500;">{row['상품명']}</h5>
-                                <p style="margin: 0; font-size: 14px; color: #A0A0A0;">🌍 {row['원산지']}</p>
+                                <!-- 색상을 직접 지정하지 않고 inherit를 사용하여 시스템 테마 폰트색을 따름 -->
+                                <h5 style="margin: 0 0 8px 0; font-size: 1.1rem; font-weight: 600; color: inherit;">{row['상품명']}</h5>
+                                <p style="margin: 0; font-size: 14px; opacity: 0.7; color: inherit;">🌍 {row['원산지']}</p>
                             </div>
                         </div>
                     </a>
