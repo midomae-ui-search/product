@@ -12,7 +12,18 @@ st.markdown("""
         display: none !important;
     }
     [data-testid="stToolbar"] { display: none !important; }
-    .stApp { margin-top: -50px; }
+    
+    /* 여기서부터 추가/수정 */
+    .stApp { margin-top: -30px !important; } /* 숫자를 -80 정도로 더 키우면 바짝 붙습니다 */
+    
+    .block-container {
+        padding-top: 0rem !important; /* 위쪽 내부 여백 완전 제거 */
+        padding-bottom: 0rem !important;
+    }
+
+    [data-testid="stHeader"] {
+        display: none !important; /* 상단 헤더 영역 숨김 */
+    }
 
     /* 위로 가기 버튼 스타일 */
     .top-btn { 
@@ -136,9 +147,6 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 
-
-
-
 if "keyword_val" not in st.session_state:
     st.session_state.keyword_val = ""
 
@@ -175,7 +183,7 @@ if conn:
     if 'load_count' not in st.session_state:
         st.session_state.load_count = 100
 
-    conditions = ['"판매상태" NOT IN ("숨김", "품절")','"상품명" NOT LIKE "%배송%"']
+    conditions = ['"판매상태" NOT IN ("숨김", "품절")', '"상품명" NOT LIKE "%배송%"']
 
     if keyword:
         k_list = keyword.split()
@@ -188,6 +196,7 @@ if conn:
     where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
     
     try:
+        # 1. 데이터 가져오기 (들여쓰기 교정 완료)
         count_query = f'SELECT COUNT(*) FROM {TABLE_NAME} {where_clause}'
         total_count = pd.read_sql(count_query, conn).iloc[0, 0]
 
@@ -195,31 +204,46 @@ if conn:
         df = pd.read_sql(query, conn)
 
         if total_count > 0:
-            st.info(f"✅ **{selected_name}** 검색 결과: **{total_count:,}**건")
-            
-            for _, row in df.iterrows():
-                # 이미지 컬럼 비율을 1에서 0.8로 줄여서 전체적인 크기를 축소 (0.8 : 4)
-                res_col1, res_col2 = st.columns([0.8, 4]) 
+            # 2. 상단 검색 결과 요약 바
+            st.markdown(f"""
+                <div style="background-color: #f0f2f6; padding: 5px 15px; border-radius: 5px; font-size: 14px; margin-bottom: 10px;">
+                    ✅ <b>{selected_name}</b> 검색 결과: <b>{total_count:,}</b>건
+                </div>
+            """, unsafe_allow_html=True)
     
-                with res_col1:
-                    if row.get('대표이미지URL'):
-                        # use_container_width=False로 설정하고 width값을 주어 크기를 고정 (예: 120)
-                        st.image(row['대표이미지URL'], width=120) 
-            
-                with res_col2:
-                    # 상품명 폰트 크기를 조금 줄여서 밸런스를 맞춤
-                    st.markdown(f"##### {row['상품명']}") 
-                    st.write(f"🌍 {row['원산지']}")
-                    st.link_button("🔗 상세페이지 바로가기", row['상품URL'])
-        
-                st.divider()
+            # 3. 상품 리스트 출력 (카드 전체 클릭 가능)
+            for _, row in df.iterrows():
+                target_url = row['상품URL']
+                img_url = row['대표이미지URL'] if row.get('대표이미지URL') else ""
+                
+                st.markdown(f"""
+                    <a href="{target_url}" target="_blank" style="text-decoration: none; color: inherit;">
+                        <div style="
+                            display: flex; 
+                            gap: 20px; 
+                            padding: 15px 0; 
+                            border-bottom: 1px solid #eee; 
+                            align-items: flex-start;
+                            cursor: pointer;">
+                            <div style="flex: 1; min-width: 160px; max-width: 180px;">
+                                <img src="{img_url}" style="width: 100%; border-radius: 8px;">
+                            </div>
+                            <div style="flex: 4;">
+                                <h5 style="margin: 0 0 8px 0; font-size: 1.1rem; color: #31333F;">{row['상품명']}</h5>
+                                <p style="margin: 0; font-size: 14px; color: #555;">🌍 {row['원산지']}</p>
+                            </div>
+                        </div>
+                    </a>
+                """, unsafe_allow_html=True)
 
+            # 4. 더보기 버튼
             if total_count > st.session_state.load_count:
                 if st.button(f"🔽 나머지 {total_count - st.session_state.load_count:,}개 더보기"):
                     st.session_state.load_count += 100
                     st.rerun()
         else:
             st.warning("검색 결과가 없습니다.")
+
     except Exception as e:
         st.error(f"데이터 로드 오류: {e}")
     
