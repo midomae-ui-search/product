@@ -204,14 +204,14 @@ if conn:
         df = pd.read_sql(query, conn)
 
         if total_count > 0:
-            # 2. 상단 검색 결과 요약 바
+            # 2. 상단 검색 결과 요약 바 (배경색과 텍스트색 조정)
             st.markdown(f"""
-                <div style="background-color: #f0f2f6; padding: 5px 15px; border-radius: 5px; font-size: 14px; margin-bottom: 10px;">
+                <div style="background-color: #262730; padding: 10px 15px; border-radius: 8px; font-size: 14px; margin-bottom: 20px; border: 1px solid #464855; color: #ffffff;">
                     ✅ <b>{selected_name}</b> 검색 결과: <b>{total_count:,}</b>건
                 </div>
             """, unsafe_allow_html=True)
     
-            # 3. 상품 리스트 출력 (카드 전체 클릭 가능)
+            # 3. 상품 리스트 출력
             for _, row in df.iterrows():
                 target_url = row['상품URL']
                 img_url = row['대표이미지URL'] if row.get('대표이미지URL') else ""
@@ -222,15 +222,16 @@ if conn:
                             display: flex; 
                             gap: 20px; 
                             padding: 15px 0; 
-                            border-bottom: 1px solid #eee; 
-                            align-items: flex-start;
+                            border-bottom: 1px solid #464855; 
+                            align-items: center;
                             cursor: pointer;">
-                            <div style="flex: 1; min-width: 160px; max-width: 180px;">
-                                <img src="{img_url}" style="width: 100%; border-radius: 8px;">
+                            <div style="flex: 1; min-width: 140px; max-width: 160px;">
+                                <img src="{img_url}" style="width: 100%; border-radius: 8px; aspect-ratio: 1/1; object-fit: cover;">
                             </div>
                             <div style="flex: 4;">
-                                <h5 style="margin: 0 0 8px 0; font-size: 1.1rem; color: #31333F;">{row['상품명']}</h5>
-                                <p style="margin: 0; font-size: 14px; color: #555;">🌍 {row['원산지']}</p>
+                                <!-- 폰트 색상을 흰색(#FFFFFF) 또는 연한 회색(#E0E0E0)으로 변경 -->
+                                <h5 style="margin: 0 0 8px 0; font-size: 1.1rem; color: #FFFFFF; font-weight: 500;">{row['상품명']}</h5>
+                                <p style="margin: 0; font-size: 14px; color: #A0A0A0;">🌍 {row['원산지']}</p>
                             </div>
                         </div>
                     </a>
