@@ -171,7 +171,7 @@ with col_clear:
 
 st.markdown("""
     <div style="text-align: center; color: #ff4b4b; font-weight: bold; font-size: 17.5px;">
-        * 국내배송/현지오늘배송은 사이트 내 진열 목록에서 확인 부탁드립니다.
+        * 4/6~4/10 신발 전품목 10% 행사 입니다.
     </div>
     """, unsafe_allow_html=True)
 
@@ -183,7 +183,7 @@ if conn:
     if 'load_count' not in st.session_state:
         st.session_state.load_count = 100
 
-    conditions = ['"판매상태" NOT IN ("숨김", "품절")', '"상품명" NOT LIKE "%배송%"']
+    conditions = ['"판매상태" NOT IN ("숨김", "품절")']
 
     if keyword:
         k_list = keyword.split()
