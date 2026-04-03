@@ -171,7 +171,7 @@ with col_clear:
 
 st.markdown("""
     <div style="text-align: center; color: #ff4b4b; font-weight: bold; font-size: 17.5px;">
-        * 4/6~4/10 신발 전품목 10% 행사 입니다.
+        * 4/6~4/10 수공 신발 전품목 10% 행사 입니다.
     </div>
     """, unsafe_allow_html=True)
 
