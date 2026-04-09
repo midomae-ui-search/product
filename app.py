@@ -7,66 +7,79 @@ st.set_page_config(page_title="상품 검색기", layout="wide")
 
 st.markdown("""
     <style>
+    /* 1. 기본 설정 (헤더/푸러 숨김 등) */
     header, footer {visibility: hidden !important; display: none !important;}
     .stAppDeployButton, .viewerBadge_link__q6n6l, .viewerBadge_container__176p1, #MainMenu {
         display: none !important;
     }
     [data-testid="stToolbar"] { display: none !important; }
-    
-    /* 여기서부터 추가/수정 */
-    .stApp { margin-top: -45px !important; } /* 숫자를 -80 정도로 더 키우면 바짝 붙습니다 */
-    
-    .block-container {
-        padding-top: 0rem !important; /* 위쪽 내부 여백 완전 제거 */
-        padding-bottom: 0rem !important;
+    .stApp { margin-top: 0px !important; }
+    /* 1. 메인 컨테이너 자체를 더 위로 끌어올림 */
+    [data-testid="stMainViewContainer"] {
+        margin-top: -60px !important; /* -45에서 -60으로 더 키워보세요 */
     }
 
-    [data-testid="stHeader"] {
-        display: none !important; /* 상단 헤더 영역 숨김 */
+    /* 2. 내부 콘텐츠 박스의 위쪽 여백을 강제로 '마이너스' 처리 */
+    .block-container { 
+        padding-top: 0rem !important; 
+        margin-top: -36px !important; /* 이 코드를 추가해서 내용물을 강제로 위로 붙입니다 */
+        padding-bottom: 0rem !important; 
+    }
+
+    /* 3. 제목의 기본 마진 제거 */
+    h2 {
+        margin-top: 0px !important;
+        padding-top: 0px !important;
+    }
+
+    /* 2. 초기화 X 버튼 (원형 고정) */
+    /* col_clear(3번째 컬럼)에 있는 버튼만 집어서 원형으로 만듭니다 */
+    div[data-testid="column"]:nth-of-type(3) button {
+        background-color: #333333 !important;
+        color: white !important;
+        border-radius: 50% !important; /* 원형 */
+        width: 40px !important;        /* 가로 고정 */
+        height: 40px !important;       /* 세로 고정 */
+        padding: 0 !important;
+        border: none !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    /* 3. 더보기 버튼 (글자 길이에 맞춰 늘어나는 타원형) */
+    div.stVerticalBlock > div.stButton > button {
+        background-color: #333333 !important; 
+        color: white !important;
+        border-radius: 20px !important;
+        width: auto !important;
+        padding: 8px 25px !important;
+        margin: 20px auto !important; 
+        display: flex !important;
+        border: 1px solid #464855 !important;
+        height: auto !important;
+    }
+
+
+    /* 4. 모든 버튼 공통 호버 효과 */
+    div.stButton > button:hover {
+        background-color: #000000 !important;
+        border-color: #ff4b4b !important;
+        color: white !important;
     }
 
     /* 위로 가기 버튼 스타일 */
     .top-btn { 
-        position: fixed; 
-        bottom: 80px; 
-        right: 30px; 
-        z-index: 999; 
-        background: white; 
-        border: 2px solid black; 
-        border-radius: 50%; 
-        width: 50px; 
-        height: 50px; 
-        display: flex; 
-        align-items: center; 
-        justify-content: center;
-        text-decoration: none; 
-        color: black !important; 
-        font-weight: bold; 
-        box-shadow: 0 4px 10px rgba(0,0,0,0.2); 
+        position: fixed; bottom: 80px; right: 30px; z-index: 999; 
+        background: white; border: 2px solid black; border-radius: 50%; 
+        width: 50px; height: 50px; display: flex; align-items: center; 
+        justify-content: center; text-decoration: none; color: black !important; 
+        font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.2); 
     }
     .top-btn:hover { background-color: #f0f2f6; }
-
-    /* 초기화 X 버튼 블랙 스타일 커스텀 */
-    div[data-testid="stButton"] > button:first-child {
-        background-color: #333333; /* 버튼 배경색: 진한 회색/검정 */
-        color: white !important;      /* X 아이콘 색상: 흰색 */
-        border-radius: 50%;         /* 원형 모양 */
-        width: 40px;
-        height: 40px;
-        border: none;
-        padding: 0;
-        font-weight: bold;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    div[data-testid="stButton"] > button:hover {
-        background-color: #000000; /* 호버 시 완전 검정 */
-        border: none;
-        color: white !important;
-    }
     </style>
     """, unsafe_allow_html=True)
+
 
 # 최상단 앵커 및 Top 버튼
 st.markdown('<div id="top"></div>', unsafe_allow_html=True)
@@ -171,7 +184,7 @@ with col_clear:
 
 st.markdown("""
     <div style="text-align: center; color: #ff4b4b; font-weight: bold; font-size: 17.5px;">
-        * 4/6~4/10 수공 신발 전품목 10% 행사 입니다.
+        * 4/6~4/10 신발 전품목 10% 행사 입니다.
     </div>
     """, unsafe_allow_html=True)
 
@@ -245,13 +258,13 @@ if conn:
                     </a>
                 """, unsafe_allow_html=True)
 
-            # 4. 더보기 버튼
+            # 4. 더보기 버튼 (수정된 디자인 적용됨)
             if total_count > st.session_state.load_count:
-                if st.button(f"🔽 나머지 {total_count - st.session_state.load_count:,}개 더보기"):
+                # 텍스트에 이모지를 포함하면 이미지처럼 글자 길이에 맞춰 배경이 생깁니다.
+                if st.button(f"🔽 더보기 ({st.session_state.load_count}/{total_count:,}) "):
                     st.session_state.load_count += 100
                     st.rerun()
-        else:
-            st.warning("검색 결과가 없습니다.")
+
 
     except Exception as e:
         st.error(f"데이터 로드 오류: {e}")
