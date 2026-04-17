@@ -184,7 +184,7 @@ with col_clear:
 
 st.markdown("""
     <div style="text-align: center; color: #ff4b4b; font-weight: bold; font-size: 17.5px;">
-        * 4/13 ~ 4/17 맨즈/키즈 전품목 10% 입니다.
+        * 4/20 ~ 4/24 프라다 전품목 10% 입니다.
     </div>
     """, unsafe_allow_html=True)
 
