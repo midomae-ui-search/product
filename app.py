@@ -233,10 +233,11 @@ if conn:
             """, unsafe_allow_html=True)
     
             # 3. 상품 리스트 출력
-            for _, row in df.iterrows():
+            for i, row in df.iterrows(): # i를 인덱스로 활용
                 target_url = row['상품URL']
                 img_url = row['대표이미지URL'] if row.get('대표이미지URL') else ""
-                
+                reg_date = row.get('등록일', '-') 
+
                 st.markdown(f"""
                     <a href="{target_url}" target="_blank" style="text-decoration: none; color: inherit;">
                         <div style="
@@ -249,10 +250,16 @@ if conn:
                             <div style="flex: 1; min-width: 140px; max-width: 160px;">
                                 <img src="{img_url}" style="width: 100%; border-radius: 8px; aspect-ratio: 1/1; object-fit: cover;">
                             </div>
-                            <div style="flex: 4;">
-                                <!-- 색상을 직접 지정하지 않고 inherit를 사용하여 시스템 테마 폰트색을 따름 -->
-                                <h5 style="margin: 0 0 8px 0; font-size: 1.1rem; font-weight: 600; color: inherit;">{row['상품명']}</h5>
-                                <p style="margin: 0; font-size: 14px; opacity: 0.7; color: inherit;"> {row['원산지']}</p>
+                            <div style="flex: 4; display: flex; flex-direction: column; justify-content: center;">
+                                <h5 style="margin: 0; font-size: 1.1rem; font-weight: 600; color: inherit; line-height: 1.2;">
+                                    {row['상품명']}
+                                </h5>
+                                <p style="margin: 0px 0 0px 0; padding-left: 0px; font-size: 12px; opacity: 0.8; color: inherit;">
+                                    등록일: {reg_date}
+                                </p>
+                                <p style="margin: 0; font-size: 13.5px; opacity: 0.7; color: inherit;">
+                                    {row['원산지']}
+                                </p>
                             </div>
                         </div>
                     </a>
