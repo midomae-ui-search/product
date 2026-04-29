@@ -236,7 +236,8 @@ if conn:
             for i, row in df.iterrows(): # i를 인덱스로 활용
                 target_url = row['상품URL']
                 img_url = row['대표이미지URL'] if row.get('대표이미지URL') else ""
-                reg_date = row.get('등록일', '-') 
+                manufacturer = row.get('제조사', '-')
+                brand = row.get('브랜드', '-')
 
                 st.markdown(f"""
                     <a href="{target_url}" target="_blank" style="text-decoration: none; color: inherit;">
@@ -254,16 +255,18 @@ if conn:
                                 <h5 style="margin: 0; font-size: 1.1rem; font-weight: 600; color: inherit; line-height: 1.2;">
                                     {row['상품명']}
                                 </h5>
-                                <p style="margin: 0px 0 0px 0; padding-left: 0px; font-size: 12px; opacity: 0.8; color: inherit;">
-                                    등록일: {reg_date}
-                                </p>
-                                <p style="margin: 0; font-size: 13.5px; opacity: 0.7; color: inherit;">
-                                    {row['원산지']}
-                                </p>
+                            <div style="margin: 0px 0; font-size: 13.5px; display: flex; gap: 10px; opacity: 0.7;">
+                                <span style="color: inherit;">{brand}</span>
+                                <span style="color: gray;">|</span>
+                                <span>{manufacturer}</span>
                             </div>
+                            <p style="margin: 0; font-size: 13.5px; opacity: 0.7; color: inherit;">
+                                {row['원산지']}
+                            </p>
                         </div>
-                    </a>
-                """, unsafe_allow_html=True)
+                    </div>
+                </a>
+            """, unsafe_allow_html=True)
 
             # 4. 더보기 버튼 (수정된 디자인 적용됨)
             if total_count > st.session_state.load_count:
