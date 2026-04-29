@@ -198,10 +198,17 @@ if conn:
 
     conditions = ['"판매상태" NOT IN ("숨김", "품절")']
 
+
     if keyword:
-        k_list = keyword.split()
-        k_cond = " AND ".join([f'("상품명" LIKE "%{k}%" OR "원산지" LIKE "%{k}%")' for k in k_list])
-        conditions.append(f"({k_cond})")
+        # 1. 브랜드 전용 검색 체크 (예: #삼성, #Apple)
+        if keyword.startswith("#"):
+            brand_k = keyword[1:].strip() # '#' 뒷부분만 추출
+            if brand_k:
+                conditions.append(f'"브랜드" LIKE "%{brand_k}%"')
+        else:
+            k_list = keyword.split()
+            k_cond = " AND ".join([f'("상품명" LIKE "%{k}%" OR "원산지" LIKE "%{k}%")' for k in k_list])
+            conditions.append(f"({k_cond})")
         
     if selected_code != 'ALL':
         conditions.append(f'"카테고리ID" LIKE "%{selected_code}%"')
