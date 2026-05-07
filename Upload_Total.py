@@ -7,33 +7,30 @@ import os
 def process_data(df):
     if df.empty: return df
     
-    # 컬럼명 정리
+    # 1. 컬럼명 정리
     df.columns = [c.strip() for c in df.columns]
     name_map = {col: '제조사' for col in df.columns if '제조사' in col}
     name_map.update({col: '브랜드' for col in df.columns if '브랜드' in col})
     df = df.rename(columns=name_map)
 
-    # 데이터 청소
+    # 2. 데이터 청소
     df['브랜드'] = df['브랜드'].fillna('미지정').astype(str).str.strip()
     df['제조사'] = df['제조사'].fillna('날짜없음').astype(str).str.strip()
     
-    # [핵심 수정] 모든 날짜 형식을 시도하여 변환
-    # 1단계: 일반적인 날짜 (2026-04-28 등)
+    # 3. [핵심] 날짜 변환 로직 (2026-01 같은 형식을 2026-01-01로 강제 인식)
+    # 먼저 일반 날짜 시도
     df['제조사_일자'] = pd.to_datetime(df['제조사'], errors='coerce')
     
-    # 2단계: 월만 있는 경우 (2026-04 등) -> 2026-04-01로 강제 변환
-    missing_date = df['제조사_일자'].isna() & (df['제조사'] != '날짜없음')
-    df.loc[missing_date, '제조사_일자'] = pd.to_datetime(
-        df.loc[missing_date, '제조사'], format='%Y-%m', errors='coerce'
-    )
+    # 실패한 것들(예: 2026-01)에 대해 '연도-월' 형식으로 다시 시도
+    mask = df['제조사_일자'].isna() & (df['제조사'] != '날짜없음')
+    df.loc[mask, '제조사_일자'] = pd.to_datetime(df.loc[mask, '제조사'], format='%Y-%m', errors='coerce')
     
-    # 3단계: 만약 2026.04 혹은 26/04 등 다른 형식일 경우를 대비해 한 번 더 시도
-    still_missing = df['제조사_일자'].isna() & (df['제조사'] != '날짜없음')
-    df.loc[still_missing, '제조사_일자'] = pd.to_datetime(
-        df.loc[still_missing, '제조사'], errors='coerce'
-    )
+    # 만약 '202601' 처럼 붙어있는 경우까지 대비
+    mask_still_na = df['제조사_일자'].isna() & (df['제조사'] != '날짜없음')
+    df.loc[mask_still_na, '제조사_일자'] = pd.to_datetime(df.loc[mask_still_na, '제조사'], format='%Y%m', errors='coerce')
     
     return df
+
 
 
 
