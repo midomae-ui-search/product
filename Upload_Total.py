@@ -6,14 +6,28 @@ import os
 # --- 1. 데이터 통합 처리 함수 ---
 def process_data(df):
     if df.empty: return df
+    
+    # 1. 컬럼 정리 및 필수 열 이름 통일
     df.columns = [c.strip() for c in df.columns]
     name_map = {col: '제조사' for col in df.columns if '제조사' in col}
     name_map.update({col: '브랜드' for col in df.columns if '브랜드' in col})
     df = df.rename(columns=name_map)
+
+    # 2. 데이터 청소 (빈 값 처리)
     df['브랜드'] = df['브랜드'].fillna('미지정').astype(str).str.strip()
     df['제조사'] = df['제조사'].fillna('날짜없음').astype(str).str.strip()
+    
+    # 3. [핵심] 날짜 변환 로직 강화
+    # 2026-04-28(일자형)과 2026-04(월형)를 모두 인식하여 '제조사_일자' 생성
     df['제조사_일자'] = pd.to_datetime(df['제조사'], errors='coerce')
+    
+    # 변환 실패한 것 중 '2026-04' 같은 형식이 있다면 해당 월 1일로 강제 변환
+    mask = df['제조사_일자'].isna() & (df['제조사'] != '날짜없음')
+    df.loc[mask, '제조사_일자'] = pd.to_datetime(df.loc[mask, '제조사'], format='%Y-%m', errors='coerce')
+    
+    # 여전히 변환 안되는 데이터(잘못된 형식 등)는 필터에서 제외하기 위해 dropna 처리 지점 준비
     return df
+
 
 # --- 2. 자동 로드 함수 ---
 @st.cache_data
