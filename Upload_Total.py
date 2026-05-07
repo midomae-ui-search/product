@@ -27,8 +27,8 @@ def load_from_db():
     if os.path.exists(db_file):
         try:
             conn = sqlite3.connect(db_file)
-            # 이미지에서 확인한 테이블명 '상품검색 v4' 사용
-            df = pd.read_sql_query("SELECT 제조사, 브랜드 FROM 상품검색 v4", conn)
+            # 이미지에서 확인한 테이블명 '상품검색v4' 사용
+            df = pd.read_sql_query("SELECT 제조사, 브랜드 FROM 상품검색v4", conn)
             conn.close()
             return process_dates(df)
         except Exception as e:
