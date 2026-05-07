@@ -63,8 +63,8 @@ def load_default_db():
     return pd.DataFrame()
 
 # --- 3. 메인 화면 구성 ---
-st.set_page_config(page_title="통합 업로드 수량 집계", layout="centered")
-st.title("📊 통합 업로드 수량 집계")
+st.set_page_config(page_title="업로드 수량 집계", layout="centered")
+st.title("📊 업로드 수량 집계")
 
 # 사이드바 구성
 st.sidebar.markdown("### ⚙️ 시스템 설정")
@@ -74,7 +74,7 @@ if st.sidebar.button("🔄 데이터 최신화 (새로고침)"):
     st.rerun()
 
 st.sidebar.divider()
-st.sidebar.markdown("### 📥 수기 파일 분석")
+st.sidebar.markdown("### 📥 수기 파일 업로드")
 uploaded_file = st.sidebar.file_uploader("새로운 엑셀/CSV 업로드", type=["xlsx", "csv"])
 
 # 데이터 로드 결정 로직
@@ -116,7 +116,7 @@ if not df.empty:
         )
         
         all_brands = sorted(df['브랜드'].unique())
-        selected_brands = st.sidebar.multiselect("👤 브랜드 선택", all_brands, default=all_brands)
+        selected_brands = st.sidebar.multiselect("👤 직원 선택", all_brands, default=all_brands)
 
         if isinstance(selected_range, tuple) and len(selected_range) == 2:
             start, end = selected_range
@@ -130,11 +130,11 @@ if not df.empty:
             
             c1, c2 = st.columns(2)
             with c1:
-                st.write("📅 **날짜/월별 수량**")
+                st.write("📅 **날짜별 수량**")
                 # 실제 기록된 텍스트(제조사) 기준으로 요약 표 생성
                 st.table(f_df['제조사'].value_counts().sort_index().rename("수량"))
             with c2:
-                st.write("👤 **브랜드별 수량**")
+                st.write("👤 **직원별 수량**")
                 st.table(f_df['브랜드'].value_counts().rename("수량"))
     else:
         st.error("데이터 내에 유효한 날짜 형식이 없습니다.")
