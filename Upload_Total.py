@@ -24,46 +24,61 @@ def process_data(df):
     df['제조사_일자'] = pd.to_datetime(df['제조사'].apply(force_to_date))
     return df
 
-# --- 2. 기본 데이터 로드 (DB) ---
+# --- 2. 기본 데이터 로드 (DB) - 경로 인식 강화 ---
 @st.cache_data(show_spinner="기본 데이터를 불러오는 중...")
 def load_default_db():
-    db_file = '상품검색 V4.db'
+    # 깃허브 서버 환경에서 파일 경로를 더 정확히 찾도록 수정
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    db_file = os.path.join(current_dir, '상품검색 V4.db')
+    
+    if not os.path.exists(db_file):
+        # 파일이 바로 옆에 있을 경우도 대비
+        db_file = '상품검색 V4.db'
+
     if os.path.exists(db_file):
         try:
             conn = sqlite3.connect(db_file)
             tables = pd.read_sql_query("SELECT name FROM sqlite_master WHERE type='table'", conn)
             if not tables.empty:
-                t_name = tables['name'].iloc[0]
+                # '상품검색v4' 테이블을 먼저 찾아보고, 없으면 첫 번째 테이블 사용
+                t_names = tables['name'].tolist()
+                t_name = '상품검색v4' if '상품검색v4' in t_names else t_names[0]
+                
                 df = pd.read_sql_query(f"SELECT * FROM `{t_name}`", conn)
                 conn.close()
                 return process_data(df)
             conn.close()
-        except: pass
+        except Exception as e:
+            st.error(f"데이터베이스 읽기 중 오류: {e}")
     return pd.DataFrame()
 
 # --- 3. 메인 화면 구성 ---
 st.set_page_config(page_title="통합 업로드 수량 집계", layout="centered")
 st.title("📊 통합 업로드 수량 집계")
 
-# 사이드바에 파일 업로드 칸 배치 (깔끔함 유지)
+# 사이드바 상단에 업로드 칸 배치
 st.sidebar.markdown("### 📥 수기 파일 분석")
 uploaded_file = st.sidebar.file_uploader("새로운 엑셀/CSV 업로드", type=["xlsx", "csv"])
 
-# 데이터 결정 로직: 업로드된 파일이 있으면 그걸 쓰고, 없으면 기본 DB 사용
+# [중요] 데이터 결정 로직
 if uploaded_file:
+    # 파일을 올렸을 때는 업로드 데이터 사용
     if uploaded_file.name.endswith('.csv'):
         try: raw_df = pd.read_csv(uploaded_file, encoding='utf-8-sig')
         except: raw_df = pd.read_csv(uploaded_file, encoding='cp949')
     else:
         raw_df = pd.read_excel(uploaded_file, engine='calamine')
     df = process_data(raw_df)
-    st.success(f"📂 업로드된 파일({uploaded_file.name}) 데이터로 조회 중")
+    st.info(f"📂 업로드된 파일({uploaded_file.name})로 분석 중입니다.")
 else:
+    # 파일을 올리지 않았을 때는 기본 DB 자동 로드
     df = load_default_db()
     if not df.empty:
-        st.success("✅ 저장소 기본 데이터를 실시간 로드했습니다.")
+        st.success("✅ 저장소 기본 데이터를 불러왔습니다.")
+    else:
+        st.warning("⚠️ 저장소에서 기본 데이터 파일을 찾을 수 없습니다.")
 
-# --- 4. 필터 및 결과 출력 (기존과 동일) ---
+# --- 4. 필터 및 결과 출력 ---
 if not df.empty:
     st.sidebar.divider()
     st.sidebar.header("🔍 필터 설정")
