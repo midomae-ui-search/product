@@ -31,36 +31,36 @@ def process_data(df):
     return df
 
 # --- 2. 데이터 로드 함수들 ---
-@st.cache_data
-def load_from_db():
+# [수정] 캐시 이름을 바꿔서 이전 캐시와 충돌을 방지합니다.
+@st.cache_data(show_spinner="데이터베이스 연결 중...")
+def load_from_db_v2():
     db_file = '상품검색 V4.db'
     if os.path.exists(db_file):
         try:
-            conn = sqlite3.connect(db_file)
-            df = pd.read_sql_query("SELECT * FROM `상품검색v4`", conn)
+            # 1. DB 연결 (타임아웃 설정 추가로 안정성 확보)
+            conn = sqlite3.connect(db_file, timeout=10)
+            
+            # 2. 테이블명 확인 (이미지에서 확인된 '상품검색v4' 사용)
+            # 테이블명이 다를 경우를 대비해 첫 번째 테이블을 자동으로 찾는 안전장치 유지
+            tables = pd.read_sql_query("SELECT name FROM sqlite_master WHERE type='table'", conn)
+            if not tables.empty:
+                t_name = tables['name'].iloc[0]
+                df = pd.read_sql_query(f"SELECT * FROM `{t_name}`", conn)
+                conn.close()
+                return process_data(df)
             conn.close()
-            return process_data(df)
         except Exception as e:
-            st.error(f"DB 읽기 오류: {e}")
+            st.error(f"⚠️ DB를 읽는 중 오류가 발생했습니다: {e}")
+    else:
+        st.error(f"⚠️ '{db_file}' 파일을 찾을 수 없습니다. 깃허브 저장소를 확인해주세요.")
     return pd.DataFrame()
 
-# --- 3. 메인 화면 구성 ---
-st.set_page_config(page_title="통합 집계 시스템", layout="centered")
-st.title("📊 통합 업로드 수량 집계")
-
-# 상단에서 데이터 소스 선택 가능하게 추가
-data_source = st.radio(
-    "📂 데이터 확인 방식을 선택하세요",
-    ("저장소 데이터 자동 로드", "수기로 직접 파일 업로드"),
-    horizontal=True
-)
-
-df = pd.DataFrame()
-
+# --- 메인 화면 로직 부분 ---
 if data_source == "저장소 데이터 자동 로드":
-    df = load_from_db()
-    if not df.empty:
-        st.success("✅ 저장소의 데이터를 불러왔습니다.")
+    df = load_from_db_v2() # 업데이트된 함수 호출
+    if df.empty:
+        st.info("데이터를 불러오는 중이거나 파일이 비어있습니다.")
+
 else:
     u_file = st.file_uploader("엑셀 또는 CSV 파일을 업로드하세요", type=["xlsx", "csv"])
     if u_file:
