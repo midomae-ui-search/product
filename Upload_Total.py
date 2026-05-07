@@ -37,8 +37,8 @@ def process_dates(df):
 
 # --- 메인 화면 구성 ---
 
-st.set_page_config(page_title="통합 집계 시스템", layout="centered")
-st.title("📊 업로드 수량 통합 집계")
+st.set_page_config(page_title="업로드 집계 시스템", layout="centered")
+st.title("📊 업로드 수량 집계")
 
 # 1. 데이터 소스 선택
 data_source = st.radio(
@@ -80,7 +80,7 @@ if not df.empty:
         )
 
         all_brands = sorted(df['브랜드'].unique().astype(str))
-        selected_brands = st.sidebar.multiselect("👤 브랜드 선택", all_brands, default=all_brands)
+        selected_brands = st.sidebar.multiselect("👤 직원 선택", all_brands, default=all_brands)
 
         if len(selected_range) == 2:
             start_date, end_date = selected_range
@@ -99,10 +99,10 @@ if not df.empty:
             st.divider()
             col1, col2 = st.columns(2)
             with col1:
-                st.write("📅 **날짜/월별 수량**")
+                st.write("📅 **날짜별 수량**")
                 st.table(filtered_df['제조사'].value_counts().sort_index().rename("수량"))
             with col2:
-                st.write("👤 **브랜드별 수량**")
+                st.write("👤 **직원별 수량**")
                 st.table(filtered_df['브랜드'].value_counts().rename("수량"))
     else:
         st.warning("데이터에 유효한 날짜 정보가 없습니다.")
