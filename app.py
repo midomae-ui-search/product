@@ -184,7 +184,7 @@ with col_clear:
 
 st.markdown("""
     <div style="text-align: center; color: #ff4b4b; font-weight: bold; font-size: 17.5px;">
-        ** 5/11 ~ 5/15 신발 전품목 10% 할인 , 전 구간 카드결제 가능 (품목무관)
+        ** 5/11 ~ 5/15 신발 전품목 10% 할인 , 품목무관 전 구간 카드결제 가능 
                       
     </div>
     """, unsafe_allow_html=True)
