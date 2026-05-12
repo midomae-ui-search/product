@@ -129,6 +129,12 @@ if not df.empty:
 
             fig = px.bar(plot_data, x=x_col, y='수량', text_auto=True, color_discrete_sequence=['#3366FF'])
             fig.update_layout(xaxis_title=unit, yaxis_title="수량(개)", height=400)
+            # 축 레이블 한글 설정
+            fig.update_xaxes(
+            tickformat="%Y년 %m월", # 축 날짜 형식을 '2026년 05월' 형태로 변경
+            dtick="M1" if unit == "월별" else None # 월별일 때 1개월 단위로 표시)
+
+            fig.update_layout(xaxis_title="기간", yaxis_title="업로드 수량(개)", hovermode="x")
             st.plotly_chart(fig, use_container_width=True)
 
             # 기존 상세 테이블
