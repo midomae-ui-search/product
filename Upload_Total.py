@@ -243,22 +243,28 @@ if not target_df.empty:
 
         if selected_cat:
             detail_df = target_df[target_df['카테고리명'] == selected_cat].copy()
-            # 링크/URL 관련 컬럼 찾기
-            link_col = next((c for c in detail_df.columns if any(keyword in c.lower() for keyword in ['링크', 'url', '주소', 'link'])), None)
             
+            # --- [수정 구간 시작] ---
+            # 1. 띄우고 싶은 컬럼명을 순서대로 리스트에 적으세요
+            # 실제 데이터의 컬럼명과 정확히 일치해야 합니다.
+            target_columns = ['상품번호', '상품명', '판매상태', '판매가', '상품상세정보'] 
+            
+            # 2. 데이터에 실제로 존재하는 컬럼만 필터링 (에러 방지)
+            display_cols = [c for c in target_columns if c in detail_df.columns]
+            display_df = detail_df[display_cols]
+
             st.write(f"### '{selected_cat}' 상세 리스트")
             
-            if link_col:
-                st.dataframe(
-                    detail_df,
-                    column_config={
-                        link_col: st.column_config.LinkColumn("제품 링크")
-                    },
-                    use_container_width=True,
-                    hide_index=True
-                )
-            else:
-                st.dataframe(detail_df, use_container_width=True, hide_index=True)
+            # 3. 데이터프레임 출력 및 링크 설정
+            st.dataframe(
+                display_df,
+                column_config={
+                    # '상품상세정보' 컬럼이 URL 주소라면 클릭 가능한 링크로 변환
+                    "상품상세정보": st.column_config.LinkColumn("제품 링크"),
+                    "판매가": st.column_config.NumberColumn("가격", format="%d원")
+                },
+                use_container_width=True,
+                hide_index=True
     else:
         st.warning("⚠️ '카테고리' 컬럼을 찾을 수 없습니다.")
 else:
