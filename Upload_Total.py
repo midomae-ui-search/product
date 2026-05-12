@@ -265,6 +265,7 @@ if not target_df.empty:
                 },
                 use_container_width=True,
                 hide_index=True
+            )  
     else:
         st.warning("⚠️ '카테고리' 컬럼을 찾을 수 없습니다.")
 else:
