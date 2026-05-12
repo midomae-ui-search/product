@@ -247,7 +247,7 @@ if not target_df.empty:
             # --- [수정 구간 시작] ---
             # 1. 띄우고 싶은 컬럼명을 순서대로 리스트에 적으세요
             # 실제 데이터의 컬럼명과 정확히 일치해야 합니다.
-            target_columns = ['상품번호', '상품명', '판매상태', '판매가', '상품상세정보'] 
+            target_columns = ['상품번호', '상품명', '카테고리ID', '상품URL', '원산지', '제조사', '브랜드'] 
             
             # 2. 데이터에 실제로 존재하는 컬럼만 필터링 (에러 방지)
             display_cols = [c for c in target_columns if c in detail_df.columns]
