@@ -96,7 +96,7 @@ if not df.empty:
         
         selected_range = st.sidebar.date_input("📅 조회 기간", value=(min_d, max_d))
         all_brands = sorted(df['브랜드'].unique())
-                brand_options = ["전체"] + all_brands
+        brand_options = ["전체"] + all_brands
         selected_options = st.sidebar.multiselect("👤 직원 선택", brand_options, default=["전체"])
 
         # '전체'가 선택되어 있으면 모든 브랜드 포함, 아니면 선택한 것만 포함
