@@ -237,7 +237,7 @@ if not target_df.empty:
         st.plotly_chart(fig_cat, use_container_width=True)
 
         # 상세 조회를 위한 선택창
-        selected_cat = st.selectbox("🔗 상세 목록을 보려는 카테고리를 선택하세요. 수정이 완료된 건이 있을수 있으니 더블체크 요망", cat_summary['카테고리명'])
+        selected_cat = st.selectbox("🔗 상세 목록을 보려는 카테고리를 선택하세요", cat_summary['카테고리명'])
 
         if selected_cat:
             detail_df = target_df[target_df['카테고리명'] == selected_cat].copy()
