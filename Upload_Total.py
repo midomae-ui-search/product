@@ -243,7 +243,7 @@ if not target_df.empty:
             detail_df = target_df[target_df['카테고리명'] == selected_cat].copy()
             
             # --- 띄우고 싶은 컬럼만 지정 (여기서 수정) ---
-            target_columns = ['상품번호', '상품명', '판매상태', '판매가', '상품상세정보'] 
+            target_columns = ['상품번호', '상품명', '상품URL', '원산지', '제조사', '브랜드'] 
             display_cols = [c for c in target_columns if c in detail_df.columns]
             display_df = detail_df[display_cols]
 
