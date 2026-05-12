@@ -135,7 +135,7 @@ if not df.empty:
             st.divider()
             c1, c2 = st.columns(2)
             with c1:
-                st.write("📅 **날짜별 **")
+                st.write("📅 **날짜별**")
                 st.table(f_df['직원'].value_counts().sort_index().rename("수량"))
             with c2:
                 st.write("👤 **직원별**")
