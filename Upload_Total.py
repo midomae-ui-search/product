@@ -228,7 +228,7 @@ if not target_df.empty:
     if cat_col:
         target_df['카테고리명'] = target_df[cat_col].apply(map_cate_name)
         cat_summary = target_df['카테고리명'].value_counts().reset_index()
-        cat_summary.columns = ['카테고리명', '수량']
+        cat_summary.columns = ['카테고리명', '수량(개)']
 
         # 상단 요약 그래프
         fig_cat = px.bar(cat_summary, x='수량', y='카테고리명', orientation='h', text='수량',
@@ -237,7 +237,7 @@ if not target_df.empty:
         st.plotly_chart(fig_cat, use_container_width=True)
 
         # 상세 조회를 위한 선택창
-        selected_cat = st.selectbox("🔗 상세 목록을 보려는 카테고리를 선택하세요", cat_summary['카테고리명'])
+        selected_cat = st.selectbox("🔗 상세 목록을 보려는 카테고리를 선택하세요 (전날 데이터의 경우, 이미 제목수정이 완료되었을수 있으니 아래 링크 같이 참고요망)", cat_summary['카테고리명'])
 
         if selected_cat:
             detail_df = target_df[target_df['카테고리명'] == selected_cat].copy()
