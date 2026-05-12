@@ -118,7 +118,7 @@ if not df.empty:
             
             # --- 5. 기간별 그래프 분석 (추가된 부분) ---
             st.divider()
-            st.subheader("기간별 업로드 추이")
+            st.subheader("📊기간별 업로드 추이")
             unit = st.radio(" ", ["일별", "주별", "월별"], horizontal=True)
             
             chart_df = f_df.copy()
@@ -189,49 +189,76 @@ if not df.empty:
     else:
         st.error("데이터 내에 유효한 날짜 형식이 없습니다.")
 
-# --- 6. 특정 조건(상품명이 '-') 제품의 카테고리별 집계 ---
+# --- 6. 상품명이 '-'인 제품의 카테고리 매핑 및 집계 ---
 st.divider()
 st.subheader("📦 상품명 미기재('-') 카테고리별 현황")
 
-# '상품명' 컬럼에서 '-' 인 데이터만 추출
-# 만약 '-'가 포함된 데이터를 찾으려면: f_df['상품명'].str.contains('-', na=False)
-target_df = f_df[f_df['상품명'] == '-'] 
+# 1. 카테고리 매핑 사전 (보내주신 데이터 기반 역매핑 생성)
+category_data = {
+    "전체": "ALL", "국내배송": "CATE118", "국내배송 특가 ~70%": "CATE128", "현지오늘배송": "CATE119", "개런티": "CATE117", "H1": "CATE72", "H2": "CATE73", "H3": "CATE74", 
+    "CC 넘버원": "CATE75", "CC 티무역": "CATE76", "CC 팬더": "CATE77", "CC 나비/기타": "CATE78", "CC 일반": "CATE80",
+    "[고퀄]기타 브랜드": "CATE79", "PD": "CATE84", "LV": "CATE85", "CD": "CATE86", "CL": "CATE87", "GY": "CATE88", 
+    "LP": "CATE89", "BV": "CATE90", "MIU": "CATE91", "YSL": "CATE92", "DV": "CATE93", "THE ROW": "CATE116", 
+    "GG": "CATE95", "FF": "CATE94", "BL": "CATE97", "BBR": "CATE98", "LW": "CATE100", "VT": "CATE99", "CHL": "CATE96", 
+    "BAOBAO": "CATE101", "기타브랜드": "CATE102", "여행구/캐리어": "CATE103", "여성 의류": "CATE47", "바람막이/경량": "CATE48", 
+    "여성패딩(겨울용)": "CATE66", "코트/퍼/무스탕(겨울용)": "CATE129", "맨즈 의류": "CATE68", "맨즈 아우터": "CATE69", 
+    "키즈의류": "CATE130", "키즈 아우터": "CATE131", "여성 신발": "CATE105", "[수공]H 신발": "CATE106", "[수공]CC 신발": "CATE107", 
+    "[수공]기타 신발": "CATE108", "남성 신발": "CATE109", "[수공]남성 신발": "CATE110", "키즈 신발": "CATE111", 
+    "시계": "CATE113", "시계정보": "CATE114", "악세서리": "CATE125", "18K 금 제작": "CATE126", "지갑": "CATE115", 
+    "모자": "CATE134", "스카프/머플러": "CATE127", "선글라스/안경": "CATE133", "기타잡화/소품": "CATE135", "여성 벨트": "CATE136", 
+    "맨즈 벨트/잡화": "CATE139"
+}
+# 코드를 키로, 이름을 값으로 바꾸는 사전 생성 (예: 'CATE97': 'BL')
+inv_map = {v: k for k, v in category_data.items()}
+
+def map_cate_name(code):
+    if not code: return "미지정"
+    # 'CATE108,CATE110' 같은 복수 코드 대응
+    codes = [c.strip() for c in str(code).split(',')]
+    names = [inv_map.get(c, c) for c in codes] # 매핑 안되면 코드 그대로 유지
+    return ", ".join(names)
+
+# 2. 데이터 필터링 (상품명이 '-'인 경우)
+target_df = f_df[f_df['상품명'] == '-'].copy()
 
 if not target_df.empty:
-    # 카테고리 관련 컬럼명 자동 찾기 (카테고리, 대분류, 중분류 등 대응)
+    # 카테고리 컬럼 자동 찾기
     cat_col = next((c for c in target_df.columns if '카테고리' in c or '분류' in c), None)
     
     if cat_col:
-        cat_summary = target_df[cat_col].value_counts().reset_index()
+        # 코드 -> 이름으로 변환 적용
+        target_df['카테고리명'] = target_df[cat_col].apply(map_cate_name)
+        
+        cat_summary = target_df['카테고리명'].value_counts().reset_index()
         cat_summary.columns = ['카테고리명', '수량']
 
-        col1, col2 = st.columns([1, 1.5])
+        col1, col2 = st.columns([1, 1.2])
         
         with col1:
-            st.write(f"🔍 총 **{len(target_df):,}** 건의 데이터가 검색되었습니다.")
-            st.dataframe(cat_summary, use_container_width=True) # 깔끔한 표 형식
+            st.write(f"🔍 총 **{len(target_df):,}** 건 (상품명 미기재)")
+            st.dataframe(cat_summary, use_container_width=True, hide_index=True)
         
         with col2:
-            # 시각화 (가로 막대 그래프)
             fig_cat = px.bar(
                 cat_summary,
                 x='수량',
                 y='카테고리명',
                 orientation='h',
                 text='수량',
-                title="카테고리별 분포",
-                color_discrete_sequence=['#FFA500'] # 강조색 (주황)
+                color='수량',
+                color_continuous_scale='Oranges'
             )
             fig_cat.update_traces(texttemplate='%{text:,}', textposition='outside')
             fig_cat.update_layout(
-                yaxis={'categoryorder':'total ascending'}, 
+                yaxis={'categoryorder':'total ascending'},
                 xaxis_title="미처리 수량",
                 yaxis_title="",
-                height=400,
-                margin=dict(l=20, r=20, t=40, b=20)
+                height=450,
+                showlegend=False,
+                coloraxis_showscale=False
             )
             st.plotly_chart(fig_cat, use_container_width=True)
     else:
-        st.warning("⚠️ 데이터에서 '카테고리' 관련 컬럼을 찾을 수 없습니다.")
+        st.warning("⚠️ '카테고리' 컬럼을 찾을 수 없습니다.")
 else:
     st.info("✅ 상품명이 '-'인 데이터가 현재 필터 조건 내에 없습니다.")
