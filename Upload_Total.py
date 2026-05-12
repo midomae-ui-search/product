@@ -189,11 +189,11 @@ if not df.empty:
     else:
         st.error("데이터 내에 유효한 날짜 형식이 없습니다.")
 
-# --- 6. 상품명이 '-'인 제품 상세 조회 (링크 포함) ---
+# --- 6. 상품명이 '-'인 제품 상세 조회 (매핑 + 컬럼 지정 + 링크) ---
 st.divider()
 st.subheader("📦 상품명 미기재('-') 카테고리별 상세")
 
-# [함수 정의] 반드시 실행 코드보다 위에 있어야 합니다.
+# [1. 매핑 데이터 및 함수] - 이 부분이 살아있어야 이름이 바뀝니다
 def get_category_map():
     category_data = {
         "전체": "ALL", "국내배송": "CATE118", "국내배송 특가 ~70%": "CATE128", "현지오늘배송": "CATE119", "개런티": "CATE117", "H1": "CATE72", "H2": "CATE73", "H3": "CATE74", 
@@ -219,15 +219,13 @@ def map_cate_name(code):
     names = [inv_map.get(c, c) for c in codes]
     return ", ".join(names)
 
-# [메인 로직]
+# [2. 메인 로직]
 target_df = f_df[f_df['상품명'] == '-'].copy()
 
 if not target_df.empty:
-    # 카테고리 컬럼 찾기
     cat_col = next((c for c in target_df.columns if '카테고리' in c or '분류' in c), None)
     
     if cat_col:
-        # 에러 발생 지점 수정: 함수가 위에서 정의됨
         target_df['카테고리명'] = target_df[cat_col].apply(map_cate_name)
         cat_summary = target_df['카테고리명'].value_counts().reset_index()
         cat_summary.columns = ['카테고리명', '수량']
@@ -244,28 +242,22 @@ if not target_df.empty:
         if selected_cat:
             detail_df = target_df[target_df['카테고리명'] == selected_cat].copy()
             
-            # --- [수정 구간 시작] ---
-            # 1. 띄우고 싶은 컬럼명을 순서대로 리스트에 적으세요
-            # 실제 데이터의 컬럼명과 정확히 일치해야 합니다.
-            target_columns = ['상품번호', '상품명', '카테고리ID', '상품URL', '원산지', '제조사', '브랜드'] 
-            
-            # 2. 데이터에 실제로 존재하는 컬럼만 필터링 (에러 방지)
+            # --- 띄우고 싶은 컬럼만 지정 (여기서 수정) ---
+            target_columns = ['상품번호', '상품명', '판매상태', '판매가', '상품상세정보'] 
             display_cols = [c for c in target_columns if c in detail_df.columns]
             display_df = detail_df[display_cols]
 
             st.write(f"### '{selected_cat}' 상세 리스트")
             
-            # 3. 데이터프레임 출력 및 링크 설정
             st.dataframe(
                 display_df,
                 column_config={
-                    # '상품상세정보' 컬럼이 URL 주소라면 클릭 가능한 링크로 변환
                     "상품상세정보": st.column_config.LinkColumn("제품 링크"),
                     "판매가": st.column_config.NumberColumn("가격", format="%d원")
                 },
                 use_container_width=True,
                 hide_index=True
-            )  
+            )
     else:
         st.warning("⚠️ '카테고리' 컬럼을 찾을 수 없습니다.")
 else:
