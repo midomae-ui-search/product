@@ -91,35 +91,10 @@ if not df.empty:
     valid_df = df.dropna(subset=['제조사_일자'])
     
     if not valid_df.empty:
-        # 데이터 기준 최소/최대 날짜
         min_d = valid_df['제조사_일자'].min().date()
         max_d = valid_df['제조사_일자'].max().date()
-        today = pd.Timestamp.now().date()
-
-        # [수정] 기존 달력 형태를 유지하되, shortcuts 기능을 한국어 버튼으로 대체
-        st.sidebar.write("📅 **빠른 날짜 지정**")
-        col1, col2 = st.sidebar.columns(2)
-        with col1:
-            if st.button("최근 1주"): st.session_state.date_val = (today - pd.Timedelta(days=7), today)
-            if st.button("최근 3달"): st.session_state.date_val = (today - pd.Timedelta(days=90), today)
-        with col2:
-            if st.button("최근 1달"): st.session_state.date_val = (today - pd.Timedelta(days=30), today)
-            if st.button("올해 전체"): st.session_state.date_val = (pd.to_datetime(f"{today.year}-01-01").date(), today)
-
-        # 세션 상태를 이용해 버튼 클릭 시 날짜 변경 반영
-        if 'date_val' not in st.session_state:
-            st.session_state.date_val = (min_d, max_d)
-
-        # 기존과 동일한 달력 위젯 (한글 날짜 포맷 적용)
-        selected_range = st.sidebar.date_input(
-            "📅 조회 기간", 
-            value=st.session_state.date_val,
-            min_value=min_d,
-            max_value=max_d,
-            format="YYYY/MM/DD",
-            label_visibility="collapsed" # 중복 라벨 방지
-        )
-
+        
+        selected_range = st.sidebar.date_input("📅 조회 기간", value=(min_d, max_d))
         all_brands = sorted(df['브랜드'].unique())
         selected_brands = st.sidebar.multiselect("👤 직원 선택", all_brands, default=all_brands)
 
