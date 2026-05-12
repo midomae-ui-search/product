@@ -110,8 +110,8 @@ if not df.empty:
             
             # --- 5. 기간별 그래프 분석 (추가된 부분) ---
             st.divider()
-            st.subheader("📈 기간별 업로드 추이")
-            unit = st.segmented_control("분석 단위 선택", ["일별", "주별", "월별"], default="일별")
+            st.subheader("기간별 업로드 추이")
+            unit = st.segmented_control("", ["일별", "주별", "월별"], default="일별")
             
             chart_df = f_df.copy()
             if unit == "일별":
@@ -152,8 +152,8 @@ if not df.empty:
 
             # 3. 레이아웃 설정 (y축 k 단위 제거)
             fig.update_layout(
-                xaxis_title="기간", 
-                yaxis_title="업로드 수량(개)", 
+                xaxis_title="", 
+                yaxis_title="업로드 수(개)", 
                 yaxis=dict(tickformat=",.0f"), # y축 숫자도 1단위까지 표시
                 height=500,
                 hovermode="x"
