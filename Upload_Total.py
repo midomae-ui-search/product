@@ -85,48 +85,16 @@ else:
         st.warning("⚠️ 데이터를 찾을 수 없습니다.")
 
 # --- 4. 필터 및 결과 출력 ---
-# --- 4. 필터 및 결과 출력 ---
 if not df.empty:
     st.sidebar.divider()
     st.sidebar.header("🔍 필터 설정")
     valid_df = df.dropna(subset=['제조사_일자'])
     
     if not valid_df.empty:
-        # [추가] 1. 빠른 기간 선택 프리셋
-        preset = st.sidebar.selectbox(
-            "📅 빠른 기간 선택",
-            ["직접 선택", "최근 1주일", "최근 1개월", "최근 3개월", "올해 전체"],
-            index=0
-        )
-
         min_d = valid_df['제조사_일자'].min().date()
         max_d = valid_df['제조사_일자'].max().date()
-        today = pd.Timestamp.now().date()
-
-        # 프리셋 선택 시 날짜 자동 계산 로직
-        if preset == "최근 1주일":
-            start_d, end_d = today - pd.Timedelta(days=7), today
-        elif preset == "최근 1개월":
-            start_d, end_d = today - pd.Timedelta(days=30), today
-        elif preset == "최근 3개월":
-            start_d, end_d = today - pd.Timedelta(days=90), today
-        elif preset == "올해 전체":
-            start_d, end_d = pd.to_datetime(f"{today.year}-01-01").date(), today
-        else:
-            # "직접 선택"일 경우 기존 데이터의 전체 범위
-            start_d, end_d = min_d, max_d
-
-        # [수정] 2. 실제 날짜 입력창 (프리셋 값이 반영됨)
-        selected_range = st.sidebar.date_input(
-            "📅 조회 기간 설정", 
-            value=(start_d, end_d),
-            min_value=min_d,
-            max_value=max_d,
-            format="YYYY/MM/DD"
-        )
         
-        # ... (이후 직원 선택 multiselect 코드가 이어집니다)
-
+        selected_range = st.sidebar.date_input("📅 조회 기간", value=(min_d, max_d))
         all_brands = sorted(df['브랜드'].unique())
         selected_brands = st.sidebar.multiselect("👤 직원 선택", all_brands, default=all_brands)
 
@@ -159,7 +127,7 @@ if not df.empty:
                 plot_data = chart_df.groupby('월').size().reset_index(name='수량')
                 x_col = '월'
 
-            # --- 5. 기간별 그래프 분석 ---
+                        # --- 5. 기간별 그래프 분석 ---
             # text='수량'을 추가하여 그래프 위에 숫자가 표시되도록 설정
             fig = px.bar(
                 plot_data, 
