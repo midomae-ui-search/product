@@ -95,11 +95,11 @@ if not df.empty:
         max_d = valid_df['제조사_일자'].max().date()
         
         selected_range = st.sidebar.date_input("📅 조회 기간", value=(min_d, max_d))
-        all_brands = sorted(df['브랜드'].unique())
+                all_brands = sorted(df['브랜드'].unique())
+        
         brand_options = ["전체"] + all_brands
         selected_options = st.sidebar.multiselect("👤 직원 선택", brand_options, default=["전체"])
 
-        # '전체'가 선택되어 있으면 모든 브랜드 포함, 아니면 선택한 것만 포함
         if "전체" in selected_options:
             final_selected = all_brands
         else:
@@ -109,7 +109,7 @@ if not df.empty:
             start, end = selected_range
             mask = (df['제조사_일자'].dt.date >= start) & \
                    (df['제조사_일자'].dt.date <= end) & \
-                   (df['브랜드'].isin(selected_brands))
+                   (df['브랜드'].isin(final_selected)) # <--- 이 부분을 selected_brands에서 final_selected로 꼭 바꿔주세요!
             f_df = df.loc[mask]
 
             # 상단 지표
