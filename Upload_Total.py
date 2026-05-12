@@ -127,15 +127,24 @@ if not df.empty:
                 plot_data = chart_df.groupby('월').size().reset_index(name='수량')
                 x_col = '월'
 
+                        # --- 5. 기간별 그래프 분석 ---
             fig = px.bar(plot_data, x=x_col, y='수량', text_auto=True, color_discrete_sequence=['#3366FF'])
-            fig.update_layout(xaxis_title=unit, yaxis_title="수량(개)", height=400)
-            # 축 레이블 한글 설정
+            
+            # 축 레이블 한글 설정 (괄호와 쉼표를 정확히 확인하세요)
             fig.update_xaxes(
-            tickformat="%Y년 %m월", # 축 날짜 형식을 '2026년 05월' 형태로 변경
-            dtick="M1" if unit == "월별" else None # 월별일 때 1개월 단위로 표시)
+                tickformat="%Y년 %m월", 
+                dtick="M1" if unit == "월별" else None
+            )
 
-            fig.update_layout(xaxis_title="기간", yaxis_title="업로드 수량(개)", hovermode="x")
+            fig.update_layout(
+                xaxis_title="기간", 
+                yaxis_title="업로드 수량(개)", 
+                height=400,
+                hovermode="x"
+            )
+            
             st.plotly_chart(fig, use_container_width=True)
+
 
             # 기존 상세 테이블
             st.divider()
