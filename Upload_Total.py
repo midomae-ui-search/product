@@ -249,14 +249,17 @@ if not target_df.empty:
 
             st.write(f"### '{selected_cat}' 상세 리스트")
             
-            st.dataframe(
+            st.data_editor( # 클릭 시 바로 이동이 잘 되도록 data_editor를 권장합니다.
                 display_df,
                 column_config={
-                    "상품상세정보": st.column_config.LinkColumn("제품 링크"),
-                    "판매가": st.column_config.NumberColumn("가격", format="%d원")
+                    "상품URL": st.column_config.LinkColumn(
+                        "제품 링크", 
+                        display_text="바로가기" # 주소 대신 '바로가기'라는 글자로 깔끔하게 표시
+                    )
                 },
                 use_container_width=True,
-                hide_index=True
+                hide_index=True,
+                disabled=True # 편집은 불가능하고 클릭만 가능하게 설정
             )
     else:
         st.warning("⚠️ '카테고리' 컬럼을 찾을 수 없습니다.")
