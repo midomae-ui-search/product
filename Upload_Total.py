@@ -98,13 +98,14 @@ if not df.empty:
         all_brands = sorted(df['브랜드'].unique())
         
         brand_options = ["전체"] + all_brands
-        selected_options = st.sidebar.multiselect("👤 직원 선택", brand_options, default=["전체"])
+        selected_option = st.sidebar.selectbox("👤 직원 선택", brand_options, index=0)
 
-        if "전체" in selected_options:
+        # 선택된 옵션에 따른 데이터 처리
+        if selected_option == "전체":
             final_selected = all_brands
         else:
-            final_selected = selected_options
-
+            # 리스트 형태로 감싸주어야 아래 .isin()에서 정상 작동합니다.
+            final_selected = [selected_option]
         if isinstance(selected_range, tuple) and len(selected_range) == 2:
             start, end = selected_range
             mask = (df['제조사_일자'].dt.date >= start) & \
