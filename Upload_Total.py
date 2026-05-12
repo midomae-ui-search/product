@@ -56,7 +56,7 @@ def load_default_db():
 
 # --- 3. 메인 화면 구성 ---
 st.set_page_config(page_title="업로드 수량 집계", layout="wide") # 그래프를 위해 넓게 설정
-st.title("📊 업로드 수량 집계 및 추이 분석")
+st.title("📊 업로드 수량 집계")
 
 # 사이드바 구성
 st.sidebar.markdown("### ⚙️ 시스템 설정")
@@ -135,10 +135,10 @@ if not df.empty:
             st.divider()
             c1, c2 = st.columns(2)
             with c1:
-                st.write("📅 **날짜별 요약 (Text)**")
-                st.table(f_df['제조사'].value_counts().sort_index().rename("수량"))
+                st.write("📅 **날짜별 **")
+                st.table(f_df['직원'].value_counts().sort_index().rename("수량"))
             with c2:
-                st.write("👤 **직원별 요약 (Text)**")
-                st.table(f_df['브랜드'].value_counts().rename("수량"))
+                st.write("👤 **직원별**")
+                st.table(f_df['직원'].value_counts().rename("수량"))
     else:
         st.error("데이터 내에 유효한 날짜 형식이 없습니다.")
