@@ -111,7 +111,7 @@ if not df.empty:
             # --- 5. 기간별 그래프 분석 (추가된 부분) ---
             st.divider()
             st.subheader("기간별 업로드 추이")
-            unit = st.segmented_control( [" ", "일별", "주별", "월별"], default="일별")
+            unit = st.segmented_control( ["", "일별", "주별", "월별"], default="일별")
             
             chart_df = f_df.copy()
             if unit == "일별":
