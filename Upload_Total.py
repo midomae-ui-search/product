@@ -135,13 +135,13 @@ if not df.empty:
             st.divider()
             c1, c2 = st.columns(2)
             with c1:
-                st.write("📅 **날짜별 요약**")
+                st.write("📅 **날짜별**")
         # '제조사' 데이터를 가져와서 결과 상의 이름을 '날짜'로 변경
                 date_summary = f_df['제조사'].value_counts().sort_index()
                 date_summary.index.name = "날짜" # 인덱스 이름을 날짜로 변경
                 st.table(date_summary.rename("수량"))
             with c2:
-                st.write("👤 **직원별 요약**")
+                st.write("👤 **직원별**")
              # '브랜드' 데이터를 가져와서 결과 상의 이름을 '직원'으로 변경
                 staff_summary = f_df['브랜드'].value_counts()
                 staff_summary.index.name = "직원" # 인덱스 이름을 직원으로 변경
