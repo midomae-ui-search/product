@@ -111,7 +111,7 @@ if not df.empty:
             # --- 5. 기간별 그래프 분석 (추가된 부분) ---
             st.divider()
             st.subheader("기간별 업로드 추이")
-            unit = st.radio("분석 단위 선택", ["일별", "주별", "월별"], horizontal=True)
+            unit = st.radio(" ", ["일별", "주별", "월별"], horizontal=True)
             
             chart_df = f_df.copy()
             if unit == "일별":
