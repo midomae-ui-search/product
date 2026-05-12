@@ -128,22 +128,39 @@ if not df.empty:
                 x_col = '월'
 
                         # --- 5. 기간별 그래프 분석 ---
-            fig = px.bar(plot_data, x=x_col, y='수량', text_auto=True, color_discrete_sequence=['#3366FF'])
-            
-            # 축 레이블 한글 설정 (괄호와 쉼표를 정확히 확인하세요)
+            # text='수량'을 추가하여 그래프 위에 숫자가 표시되도록 설정
+            fig = px.bar(
+                plot_data, 
+                x=x_col, 
+                y='수량', 
+                text='수량', # 막대 위에 표시될 텍스트 데이터
+                color_discrete_sequence=['#3366FF']
+            )
+
+            # 1. 막대 위 텍스트 설정: 천 단위 쉼표(,) 표시 및 위치
+            fig.update_traces(
+                texttemplate='%{text:,}', # 16,435 형태로 표시
+                textposition='outside',    # 막대 바깥쪽 상단에 고정
+                hovertemplate='수량: %{y:,}개<extra></extra>' # 마우스 오버 시 수량만 표시 (제조사_일자 제거)
+            )
+
+            # 2. 축 레이블 및 한국어 형식 설정
             fig.update_xaxes(
                 tickformat="%Y년 %m월", 
                 dtick="M1" if unit == "월별" else None
             )
 
+            # 3. 레이아웃 설정 (y축 k 단위 제거)
             fig.update_layout(
                 xaxis_title="기간", 
                 yaxis_title="업로드 수량(개)", 
-                height=400,
+                yaxis=dict(tickformat=",.0f"), # y축 숫자도 1단위까지 표시
+                height=500,
                 hovermode="x"
             )
             
             st.plotly_chart(fig, use_container_width=True)
+
 
 
             # 기존 상세 테이블
