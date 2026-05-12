@@ -191,7 +191,7 @@ if not df.empty:
 
 # --- 6. 상품명이 '-'인 제품 상세 조회 (매핑 + 컬럼 지정 + 링크) ---
 st.divider()
-st.subheader("📦 상품명 미기재('-') 카테고리별 상세")
+st.subheader("📦 상품명 미수정 카테고리 리스트")
 
 # [1. 매핑 데이터 및 함수] - 이 부분이 살아있어야 이름이 바뀝니다
 def get_category_map():
