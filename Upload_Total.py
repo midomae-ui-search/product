@@ -188,3 +188,50 @@ if not df.empty:
                 st.table(staff_summary.rename("수량"))
     else:
         st.error("데이터 내에 유효한 날짜 형식이 없습니다.")
+
+# --- 6. 특정 조건(상품명이 '-') 제품의 카테고리별 집계 ---
+st.divider()
+st.subheader("📦 상품명 미기재('-') 카테고리별 현황")
+
+# '상품명' 컬럼에서 '-' 인 데이터만 추출
+# 만약 '-'가 포함된 데이터를 찾으려면: f_df['상품명'].str.contains('-', na=False)
+target_df = f_df[f_df['상품명'] == '-'] 
+
+if not target_df.empty:
+    # 카테고리 관련 컬럼명 자동 찾기 (카테고리, 대분류, 중분류 등 대응)
+    cat_col = next((c for c in target_df.columns if '카테고리' in c or '분류' in c), None)
+    
+    if cat_col:
+        cat_summary = target_df[cat_col].value_counts().reset_index()
+        cat_summary.columns = ['카테고리명', '수량']
+
+        col1, col2 = st.columns([1, 1.5])
+        
+        with col1:
+            st.write(f"🔍 총 **{len(target_df):,}** 건의 데이터가 검색되었습니다.")
+            st.dataframe(cat_summary, use_container_width=True) # 깔끔한 표 형식
+        
+        with col2:
+            # 시각화 (가로 막대 그래프)
+            fig_cat = px.bar(
+                cat_summary,
+                x='수량',
+                y='카테고리명',
+                orientation='h',
+                text='수량',
+                title="카테고리별 분포",
+                color_discrete_sequence=['#FFA500'] # 강조색 (주황)
+            )
+            fig_cat.update_traces(texttemplate='%{text:,}', textposition='outside')
+            fig_cat.update_layout(
+                yaxis={'categoryorder':'total ascending'}, 
+                xaxis_title="미처리 수량",
+                yaxis_title="",
+                height=400,
+                margin=dict(l=20, r=20, t=40, b=20)
+            )
+            st.plotly_chart(fig_cat, use_container_width=True)
+    else:
+        st.warning("⚠️ 데이터에서 '카테고리' 관련 컬럼을 찾을 수 없습니다.")
+else:
+    st.info("✅ 상품명이 '-'인 데이터가 현재 필터 조건 내에 없습니다.")
