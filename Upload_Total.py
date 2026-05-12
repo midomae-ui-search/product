@@ -228,7 +228,7 @@ if not target_df.empty:
     if cat_col:
         target_df['카테고리명'] = target_df[cat_col].apply(map_cate_name)
         cat_summary = target_df['카테고리명'].value_counts().reset_index()
-        cat_summary.columns = ['카테고리명', '수량(개)']
+        cat_summary.columns = ['카테고리명', '수량']
 
         # 상단 요약 그래프
         fig_cat = px.bar(cat_summary, x='수량', y='카테고리명', orientation='h', text='수량',
