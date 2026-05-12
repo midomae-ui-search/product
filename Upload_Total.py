@@ -106,7 +106,7 @@ if not df.empty:
             f_df = df.loc[mask]
 
             # 상단 지표
-            st.subheader(f"✅ 필터 결과 총 업로드: **{len(f_df):,} 개**")
+            st.subheader(f"총 업로드: **{len(f_df):,} 개**")
             
             # --- 5. 기간별 그래프 분석 (추가된 부분) ---
             st.divider()
@@ -136,9 +136,9 @@ if not df.empty:
             c1, c2 = st.columns(2)
             with c1:
                 st.write("📅 **날짜별**")
-                st.table(f_df['직원'].value_counts().sort_index().rename("수량"))
+                st.table(f_df['제조사'].value_counts().sort_index().rename("수량"))
             with c2:
                 st.write("👤 **직원별**")
-                st.table(f_df['직원'].value_counts().rename("수량"))
+                st.table(f_df['브랜드'].value_counts().rename("수량"))
     else:
         st.error("데이터 내에 유효한 날짜 형식이 없습니다.")
