@@ -9,11 +9,11 @@ import streamlit as st
 # [자동 업데이트] 원드라이브로부터 최신 DB 다운로드 로직
 # =========================================================
 # 1. 복사한 원드라이브 단축 링크 주소를 넣으세요.
-ONEDRIVE_URL = "https://1drv.ms/u/c/3934cbd7854c5f54/IQCCet6sZmwSTbs-ZicHiqIzAeyNOZxZvHCvZwy58kK74cI?e=AGYqea"
+ONEDRIVE_URL = "https://1drv.ms/u/c/3934cbd7854c5f54/IQCCet6sZmwSTbs-ZicHiqIzAeyNOZxZvHCvZwy58kK74cI?e=n7UbLq"
 DB_FILE = '상품검색 V4.db' 
 
 def download_onedrive_db():
-    if ONEDRIVE_URL == "https://1drv.ms/u/c/3934cbd7854c5f54/IQCCet6sZmwSTbs-ZicHiqIzAeyNOZxZvHCvZwy58kK74cI?e=AGYqea":
+    if ONEDRIVE_URL == "https://1drv.ms/u/c/3934cbd7854c5f54/IQCCet6sZmwSTbs-ZicHiqIzAeyNOZxZvHCvZwy58kK74cI?e=n7UbLq":
         return
     try:
         data_bytes = ONEDRIVE_URL.encode("utf-8")
