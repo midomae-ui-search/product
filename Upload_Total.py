@@ -17,6 +17,8 @@ def process_data(df):
     df = df.rename(columns=name_map)
 
     df['브랜드'] = df['브랜드'].fillna('미지정').astype(str).str.strip()
+    df.loc[df['브랜드'] == '', '브랜드'] = '미지정'
+    
     df['제조사'] = df['제조사'].fillna('날짜없음').astype(str).str.strip()
     
     def force_to_date(val):
@@ -33,23 +35,20 @@ def process_data(df):
     df['제조사_일자'] = pd.to_datetime(df['제조사'].apply(force_to_date))
     return df
 
-# --- 2. 기본 데이터 로드 (디스크 에러 방지형 메모리 직독 로직) ---
+# --- 2. 기본 데이터 로드 ---
 @st.cache_data(show_spinner="압축 파일에서 기본 데이터를 불러오는 중...")
 def load_default_db():
     current_dir = os.path.dirname(os.path.abspath(__file__))
     
-    # 두 가지 경로 유형(절대/상대) 모두 지원하도록 크로스 체크
     zip_file = os.path.join(current_dir, '상품검색 V4.zip')
     if not os.path.exists(zip_file):
         zip_file = '상품검색 V4.zip'
 
     if os.path.exists(zip_file):
         try:
-            # 1. 파일 잠김이나 디스크 에러를 막기 위해 파일을 아예 '바이너리 데이터'로 통째로 읽어옴
             with open(zip_file, 'rb') as raw_f:
                 zip_bytes = io.BytesIO(raw_f.read())
             
-            # 2. 읽어온 바이너리 데이터를 메모리 공간 안에서 가상 zip 파일로 열기
             with zipfile.ZipFile(zip_bytes, 'r') as z:
                 db_in_zip = [f for f in z.namelist() if f.endswith('.db')]
                 
@@ -57,11 +56,9 @@ def load_default_db():
                     st.error("⚠️ 압축 파일 내부에 .db 파일이 존재하지 않습니다.")
                     return pd.DataFrame()
                 
-                target_db_name = db_in_zip[0] # 첫 번째 파일 이름 지정
+                target_db_name = db_in_zip
                 db_data = z.read(target_db_name)
                 
-                # 3. 디스크에 임시 DB 파일을 생성하면 동시 요청 시 충돌하므로 
-                # 메모리에 추출 데이터를 부어준 뒤 고유 세션 경로로 잠시 우회 연결
                 unique_temp_path = os.path.join(current_dir, f"_temp_dashboard_db_{datetime.datetime.now().strftime('%H%M%S')}.db")
                 with open(unique_temp_path, "wb") as temp_f:
                     temp_f.write(db_data)
@@ -71,7 +68,7 @@ def load_default_db():
                 
                 if not tables.empty:
                     t_names = tables['name'].tolist()
-                    t_name = '상품검색v4' if '상품검색v4' in t_names else t_names[0]
+                    t_name = '상품검색v4' if '상품검색v4' in t_names else t_names
                     df = pd.read_sql_query(f"SELECT * FROM `{t_name}`", conn)
                     conn.close()
                     
@@ -98,7 +95,6 @@ if st.sidebar.button("🔄 데이터 최신화 (새로고침)"):
 
 st.sidebar.divider()
 st.sidebar.markdown("### 📥 수기 파일 업로드")
-
 uploaded_file = st.sidebar.file_uploader("새로운 엑셀/CSV/ZIP 업로드", type=["xlsx", "csv", "zip"])
 
 df = pd.DataFrame()
@@ -114,7 +110,7 @@ if uploaded_file:
                 if not valid_files:
                     st.error("⚠️ 업로드한 ZIP 파일 내에 읽을 수 있는 파일이 없습니다.")
                 else:
-                    target_file = valid_files[0]
+                    target_file = valid_files
                     extracted_data = z.read(target_file)
                     
                     if target_file.endswith('.csv'):
@@ -131,7 +127,7 @@ if uploaded_file:
                         conn = sqlite3.connect(temp_upload_db)
                         tables = pd.read_sql_query("SELECT name FROM sqlite_master WHERE type='table'", conn)
                         if not tables.empty:
-                            t_name = '상품검색v4' if '상품검색v4' in tables['name'].tolist() else tables['name'].iloc[0]
+                            t_name = '상품검색v4' if '상품검색v4' in tables['name'].tolist() else tables['name'].iloc
                             raw_df = pd.read_sql_query(f"SELECT * FROM `{t_name}`", conn)
                         conn.close()
                         if os.path.exists(temp_upload_db): os.remove(temp_upload_db)
@@ -224,15 +220,19 @@ if not df.empty:
             else:
                 st.info("선택 기간에 시각화할 데이터가 없습니다.")
 
-            # 상세 테이블
+            # 상세 테이블 구역
             st.divider()
             c1, c2 = st.columns(2)
             with c1:
-                st.write("📅 **날짜별**")
-                date_summary = f_df['제조사'].value_counts().sort_index()
-                date_summary.index.name = "날짜" 
-                st.table(date_summary.rename("수량"))
+                st.markdown("📅 **날짜별**")
+                date_summary = f_df['제조사'].value_counts().reset_index()
+                date_summary.columns = ['날짜', '수량']
+                date_summary = date_summary.sort_values(by='날짜')
+                st.dataframe(date_summary, use_container_width=True, hide_index=True)
+                
             with c2:
-                st.write("👤 **직원별**")
-                staff_summary = f_df['브랜드'].value_counts()
-                staff_summary.index.name = "직원" 
+                st.markdown("👤 **직원별**")
+                staff_summary = f_df['브랜드'].value_counts().reset_index()
+                staff_summary.columns = ['직원', '수량']
+                staff_summary = staff_summary.sort_values(by='수량', ascending=False)
+                st.dataframe(staff_summary, use_container_width=True, hide_index=True)
