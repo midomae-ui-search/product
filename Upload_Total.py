@@ -16,7 +16,6 @@ def process_data(df):
     name_map.update({col: '브랜드' for col in df.columns if '브랜드' in col})
     df = df.rename(columns=name_map)
 
-    # 브랜드(직원명) 공백 및 결측치 안전하게 처리
     df['브랜드'] = df['브랜드'].fillna('미지정').astype(str).str.strip()
     df.loc[df['브랜드'] == '', '브랜드'] = '미지정'
     
@@ -36,20 +35,23 @@ def process_data(df):
     df['제조사_일자'] = pd.to_datetime(df['제조사'].apply(force_to_date))
     return df
 
-# --- 2. 기본 데이터 로드 ---
+# --- 2. 기본 데이터 로드 (경로 탐색 완벽 보완 버전) ---
 @st.cache_data(show_spinner="압축 파일에서 기본 데이터를 불러오는 중...")
 def load_default_db():
     current_dir = os.path.dirname(os.path.abspath(__file__))
     
+    # [오류 해결 포인트] 경로 탐색을 순차적으로 안전하게 크로스 체크합니다.
     zip_file = os.path.join(current_dir, '상품검색 V4.zip')
     if not os.path.exists(zip_file):
         zip_file = '상품검색 V4.zip'
 
     if os.path.exists(zip_file):
         try:
+            # 1. 파일 경로를 확실하게 지정하여 바이너리로 열기
             with open(zip_file, 'rb') as raw_f:
                 zip_bytes = io.BytesIO(raw_f.read())
             
+            # 2. 메모리 상에서 zip 파일 언팩
             with zipfile.ZipFile(zip_bytes, 'r') as z:
                 db_in_zip = [f for f in z.namelist() if f.endswith('.db')]
                 
@@ -57,9 +59,10 @@ def load_default_db():
                     st.error("⚠️ 압축 파일 내부에 .db 파일이 존재하지 않습니다.")
                     return pd.DataFrame()
                 
-                target_db_name = db_in_zip
+                target_db_name = db_in_zip[0]  # 확실하게 첫번째 파일 문자열 추출
                 db_data = z.read(target_db_name)
                 
+                # 3. 임시 DB 생성 및 조회 처리
                 unique_temp_path = os.path.join(current_dir, f"_temp_dashboard_db_{datetime.datetime.now().strftime('%H%M%S')}.db")
                 with open(unique_temp_path, "wb") as temp_f:
                     temp_f.write(db_data)
@@ -69,7 +72,7 @@ def load_default_db():
                 
                 if not tables.empty:
                     t_names = tables['name'].tolist()
-                    t_name = '상품검색v4' if '상품검색v4' in t_names else t_names
+                    t_name = '상품검색v4' if '상품검색v4' in t_names else t_names[0]
                     df = pd.read_sql_query(f"SELECT * FROM `{t_name}`", conn)
                     conn.close()
                     
@@ -83,6 +86,8 @@ def load_default_db():
                     
         except Exception as e:
             st.error(f"기본 압축 데이터베이스 읽기 중 오류: {e}")
+    else:
+        st.error(f"⚠️ 시스템에서 '상품검색 V4.zip' 파일을 찾을 수 없습니다. 경로를 확인해 주세요. (조회 경로: {zip_file})")
     return pd.DataFrame()
 
 # --- 3. 메인 화면 구성 ---
@@ -111,7 +116,7 @@ if uploaded_file:
                 if not valid_files:
                     st.error("⚠️ 업로드한 ZIP 파일 내에 읽을 수 있는 파일이 없습니다.")
                 else:
-                    target_file = valid_files
+                    target_file = valid_files[0]
                     extracted_data = z.read(target_file)
                     
                     if target_file.endswith('.csv'):
@@ -128,7 +133,7 @@ if uploaded_file:
                         conn = sqlite3.connect(temp_upload_db)
                         tables = pd.read_sql_query("SELECT name FROM sqlite_master WHERE type='table'", conn)
                         if not tables.empty:
-                            t_name = '상품검색v4' if '상품검색v4' in tables['name'].tolist() else tables['name'].iloc
+                            t_name = '상품검색v4' if '상품검색v4' in tables['name'].tolist() else tables['name'].iloc[0]
                             raw_df = pd.read_sql_query(f"SELECT * FROM `{t_name}`", conn)
                         conn.close()
                         if os.path.exists(temp_upload_db): os.remove(temp_upload_db)
@@ -231,8 +236,3 @@ if not df.empty:
                 date_summary = date_summary.sort_values(by='날짜')
                 st.dataframe(date_summary, use_container_width=True, hide_index=True)
                 
-            with c2:
-                st.markdown("👤 **직원별**")
-                staff_summary = f_df['브랜드'].value_counts().reset_index()
-                staff_summary.columns = ['직원', '수량']
-                staff_summary = staff_summary.sort_values(by='수량', ascending=False)
