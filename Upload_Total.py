@@ -236,6 +236,13 @@ if not df.empty:
                 date_summary = date_summary.sort_values(by='날짜')
                 st.dataframe(date_summary, use_container_width=True, hide_index=True)
 
+            with c2:
+                st.markdown("👤 **직원별**")
+                staff_summary = f_df['브랜드'].value_counts().reset_index()
+                staff_summary.columns = ['직원', '수량']
+                st.dataframe(staff_summary.sort_values(by='수량', ascending=False), use_container_width=True, hide_index=True)
+
+
             # --- 6. 상품명이 미수정된 제품 상세 조회 ---
             st.divider()
             st.subheader("📦 상품명 미수정 카테고리 리스트")
