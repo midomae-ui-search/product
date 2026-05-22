@@ -98,7 +98,7 @@ category_data = {
     "맨즈 벨트/잡화": "CATE139"
 }
 
-st.markdown("<h2 style='font-size: 24px; margin-bottom: -20px;'>🔍 상품 검색기</h2>", unsafe_allow_html=True)
+st.markdown("<h2 style='font-size: 24px; margin-bottom: 0px;'>🔍 상품 검색기</h2>", unsafe_allow_html=True)
 
 if "keyword_val" not in st.session_state:
     st.session_state.keyword_val = ""
