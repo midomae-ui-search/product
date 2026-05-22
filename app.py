@@ -93,10 +93,23 @@ TABLE_NAME = '"상품검색v4"'
 
 def get_connection():
     try:
+        # [수정된 안전장치] 새 압축 파일이 존재한다면, 
+        # 기존 DB 파일의 크기와 상관없이 먼저 압축을 풀어 강제로 덮어씌웁니다.
+        if os.path.exists(ZIP_FILE):
+            with zipfile.ZipFile(ZIP_FILE, 'r') as zip_ref:
+                zip_ref.extractall('.')
+                
+        # 만약 압축이 해제된 후에도 DB 파일 크기가 너무 작다면(50MB 미만) 삭제 처리
+        if os.path.exists(DB_FILE):
+            if os.path.getsize(DB_FILE) < 1024 * 1024 * 50:
+                os.remove(DB_FILE)
+                st.error("❌ 데이터베이스 파일이 손상되었거나 용량이 너무 작습니다.")
+                return None
+                
         conn = sqlite3.connect(DB_FILE)
         return conn
     except Exception as e:
-        st.error(f"❌ DB 연결 실패: {e}")
+        st.error(f"❌ 데이터베이스 연결 실패: {e}")
         return None
 
 # 카테고리 매핑 데이터
