@@ -120,7 +120,7 @@ with col_clear:
 
 st.markdown("""
     <div style="text-align: center; color: #ff4b4b; font-weight: bold; font-size: 17.5px;">
-        ** 5/18 ~ 5/22 샤넬 브랜드 10% 할인 + 전품목 금액무관 카드결제 가능
+        **
     </div>
     """, unsafe_allow_html=True)
 
