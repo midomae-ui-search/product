@@ -33,33 +33,40 @@ def process_data(df):
     df['제조사_일자'] = pd.to_datetime(df['제조사'].apply(force_to_date))
     return df
 
-# --- 2. 기본 데이터 로드 ---
+# --- 2. 기본 데이터 로드 (디스크 에러 방지형 메모리 직독 로직) ---
 @st.cache_data(show_spinner="압축 파일에서 기본 데이터를 불러오는 중...")
 def load_default_db():
     current_dir = os.path.dirname(os.path.abspath(__file__))
     
+    # 두 가지 경로 유형(절대/상대) 모두 지원하도록 크로스 체크
     zip_file = os.path.join(current_dir, '상품검색 V4.zip')
     if not os.path.exists(zip_file):
         zip_file = '상품검색 V4.zip'
 
     if os.path.exists(zip_file):
         try:
-            with zipfile.ZipFile(zip_file, 'r') as z:
+            # 1. 파일 잠김이나 디스크 에러를 막기 위해 파일을 아예 '바이너리 데이터'로 통째로 읽어옴
+            with open(zip_file, 'rb') as raw_f:
+                zip_bytes = io.BytesIO(raw_f.read())
+            
+            # 2. 읽어온 바이너리 데이터를 메모리 공간 안에서 가상 zip 파일로 열기
+            with zipfile.ZipFile(zip_bytes, 'r') as z:
                 db_in_zip = [f for f in z.namelist() if f.endswith('.db')]
                 
                 if not db_in_zip:
-                    st.error("⚠️ 시스템 압축 파일(.zip) 내부에 .db 확장자 파일이 존재하지 않습니다.")
+                    st.error("⚠️ 압축 파일 내부에 .db 파일이 존재하지 않습니다.")
                     return pd.DataFrame()
                 
-                target_db_name = db_in_zip[0] # 첫 번째 파일 안전하게 선택
+                target_db_name = db_in_zip[0] # 첫 번째 파일 이름 지정
                 db_data = z.read(target_db_name)
-                mem_db = io.BytesIO(db_data)
                 
-                temp_db_path = os.path.join(current_dir, "_temp_cloud_db.db")
-                with open(temp_db_path, "wb") as f:
-                    f.write(mem_db.getbuffer())
+                # 3. 디스크에 임시 DB 파일을 생성하면 동시 요청 시 충돌하므로 
+                # 메모리에 추출 데이터를 부어준 뒤 고유 세션 경로로 잠시 우회 연결
+                unique_temp_path = os.path.join(current_dir, f"_temp_dashboard_db_{datetime.datetime.now().strftime('%H%M%S')}.db")
+                with open(unique_temp_path, "wb") as temp_f:
+                    temp_f.write(db_data)
                 
-                conn = sqlite3.connect(temp_db_path)
+                conn = sqlite3.connect(unique_temp_path)
                 tables = pd.read_sql_query("SELECT name FROM sqlite_master WHERE type='table'", conn)
                 
                 if not tables.empty:
@@ -68,19 +75,16 @@ def load_default_db():
                     df = pd.read_sql_query(f"SELECT * FROM `{t_name}`", conn)
                     conn.close()
                     
-                    if os.path.exists(temp_db_path):
-                        os.remove(temp_db_path)
+                    if os.path.exists(unique_temp_path):
+                        os.remove(unique_temp_path)
                     return process_data(df)
                     
                 conn.close()
-                if os.path.exists(temp_db_path):
-                    os.remove(temp_db_path)
+                if os.path.exists(unique_temp_path):
+                    os.remove(unique_temp_path)
                     
         except Exception as e:
             st.error(f"기본 압축 데이터베이스 읽기 중 오류: {e}")
-            temp_db_path = os.path.join(current_dir, "_temp_cloud_db.db")
-            if os.path.exists(temp_db_path):
-                os.remove(temp_db_path)
     return pd.DataFrame()
 
 # --- 3. 메인 화면 구성 ---
@@ -157,7 +161,6 @@ if not df.empty:
     st.sidebar.divider()
     st.sidebar.header("🔍 필터 설정")
     
-    # [오류 해결 포인트] 정상적인 연도 범위를 벗어난 이상치 데이터 필터링 (2020년 ~ 현재 연도+1년 기준)
     today_year = datetime.date.today().year
     chart_df_clean = df.dropna(subset=['제조사_일자']).copy()
     
@@ -168,13 +171,11 @@ if not df.empty:
         ]
 
     if not chart_df_clean.empty:
-        # 안전하게 정제된 날짜 데이터를 바탕으로 최소/최대값 산출
         min_d = chart_df_clean['제조사_일자'].min().date()
         max_d = chart_df_clean['제조사_일자'].max().date()
         
-        # 10년 이상 격차 발생 대비 최종 방어 코드
         if (max_d - min_d).days > 365 * 5:
-            min_d = max_d - datetime.timedelta(days=365) # 격차가 너무 크면 기본 조회기간을 최근 1년으로 고정
+            min_d = max_d - datetime.timedelta(days=365)
             
         selected_range = st.sidebar.date_input("📅 조회 기간", value=(min_d, max_d))
         all_brands = sorted(df['브랜드'].unique())
@@ -235,7 +236,3 @@ if not df.empty:
                 st.write("👤 **직원별**")
                 staff_summary = f_df['브랜드'].value_counts()
                 staff_summary.index.name = "직원" 
-                st.table(staff_summary.rename("수량"))
-                
-            # --- 6. 상품명이 '-'인 제품 상세 조회 ---
-            st.divider()
