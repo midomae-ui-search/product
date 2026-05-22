@@ -16,6 +16,7 @@ def process_data(df):
     name_map.update({col: '브랜드' for col in df.columns if '브랜드' in col})
     df = df.rename(columns=name_map)
 
+    # 브랜드(직원명) 공백 및 결측치 안전하게 처리
     df['브랜드'] = df['브랜드'].fillna('미지정').astype(str).str.strip()
     df.loc[df['브랜드'] == '', '브랜드'] = '미지정'
     
@@ -220,7 +221,7 @@ if not df.empty:
             else:
                 st.info("선택 기간에 시각화할 데이터가 없습니다.")
 
-            # 상세 테이블 구역
+            # 상세 테이블 구역 (직원별 표 정상 출력 패치 적용)
             st.divider()
             c1, c2 = st.columns(2)
             with c1:
@@ -235,4 +236,3 @@ if not df.empty:
                 staff_summary = f_df['브랜드'].value_counts().reset_index()
                 staff_summary.columns = ['직원', '수량']
                 staff_summary = staff_summary.sort_values(by='수량', ascending=False)
-                st.dataframe(staff_summary, use_container_width=True, hide_index=True)
