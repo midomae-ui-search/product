@@ -4,6 +4,7 @@ import sqlite3
 import os
 import zipfile  
 import io  
+import datetime
 import plotly.express as px  
 
 # --- 1. 데이터 처리 핵심 함수 ---
@@ -32,7 +33,7 @@ def process_data(df):
     df['제조사_일자'] = pd.to_datetime(df['제조사'].apply(force_to_date))
     return df
 
-# --- 2. 기본 데이터 로드 (서버 내 ZIP 파일 내부 DB 읽기) ---
+# --- 2. 기본 데이터 로드 ---
 @st.cache_data(show_spinner="압축 파일에서 기본 데이터를 불러오는 중...")
 def load_default_db():
     current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -50,7 +51,7 @@ def load_default_db():
                     st.error("⚠️ 시스템 압축 파일(.zip) 내부에 .db 확장자 파일이 존재하지 않습니다.")
                     return pd.DataFrame()
                 
-                target_db_name = db_in_zip[0]
+                target_db_name = db_in_zip[0] # 첫 번째 파일 안전하게 선택
                 db_data = z.read(target_db_name)
                 mem_db = io.BytesIO(db_data)
                 
@@ -80,16 +81,12 @@ def load_default_db():
             temp_db_path = os.path.join(current_dir, "_temp_cloud_db.db")
             if os.path.exists(temp_db_path):
                 os.remove(temp_db_path)
-    else:
-        st.warning(f"⚠️ '{zip_file}' 파일을 찾을 수 없습니다. GitHub 저장소를 확인해 주세요.")
-        
     return pd.DataFrame()
 
 # --- 3. 메인 화면 구성 ---
 st.set_page_config(page_title="업로드 수량 집계", layout="wide") 
 st.title("📊 업로드 수량 집계")
 
-# 사이드바 구성
 st.sidebar.markdown("### ⚙️ 시스템 설정")
 if st.sidebar.button("🔄 데이터 최신화 (새로고침)"):
     st.cache_data.clear()
@@ -98,26 +95,22 @@ if st.sidebar.button("🔄 데이터 최신화 (새로고침)"):
 st.sidebar.divider()
 st.sidebar.markdown("### 📥 수기 파일 업로드")
 
-# [개선 적용] 수기 업로드 허용 유형에 zip 추가
 uploaded_file = st.sidebar.file_uploader("새로운 엑셀/CSV/ZIP 업로드", type=["xlsx", "csv", "zip"])
 
 df = pd.DataFrame()
 
 if uploaded_file:
     file_name = uploaded_file.name.lower()
-    
-    # CASE A: 사용자가 수기 파일로 ZIP(알집)을 올렸을 때의 처리 로직
     if file_name.endswith('.zip'):
         try:
             with zipfile.ZipFile(uploaded_file, 'r') as z:
-                # 압축 내부에서 분석 타겟 데이터 유형(.xlsx, .csv, .db) 식별
                 internal_files = z.namelist()
                 valid_files = [f for f in internal_files if f.endswith(('.xlsx', '.csv', '.db')) and not f.startswith('__MACOSX')]
                 
                 if not valid_files:
-                    st.error("⚠️ 업로드한 ZIP 파일 내에 읽을 수 있는 엑셀(.xlsx), CSV(.csv), DB(.db) 파일이 없습니다.")
+                    st.error("⚠️ 업로드한 ZIP 파일 내에 읽을 수 있는 파일이 없습니다.")
                 else:
-                    target_file = valid_files[0]  # 첫 번째 유효 파일 선택
+                    target_file = valid_files[0]
                     extracted_data = z.read(target_file)
                     
                     if target_file.endswith('.csv'):
@@ -127,7 +120,6 @@ if uploaded_file:
                         try: raw_df = pd.read_excel(io.BytesIO(extracted_data), engine='calamine')
                         except: raw_df = pd.read_excel(io.BytesIO(extracted_data))
                     elif target_file.endswith('.db'):
-                        # 업로드된 zip 내부에 db가 있을 경우 가상 메모리 매핑 처리
                         current_dir = os.path.dirname(os.path.abspath(__file__))
                         temp_upload_db = os.path.join(current_dir, "_temp_upload_db.db")
                         with open(temp_upload_db, "wb") as f:
@@ -143,21 +135,16 @@ if uploaded_file:
                     df = process_data(raw_df)
                     st.info(f"📂 알집 내부 파일({target_file}) 분석 완료")
         except Exception as e:
-            st.error(f"업로드된 ZIP 파일 해제 및 데이터 파싱 중 오류 발생: {e}")
+            st.error(f"업로드된 ZIP 파일 해제 오류: {e}")
             
-    # CASE B: 기존 단일 CSV 파일 처리
     elif file_name.endswith('.csv'):
         try: raw_df = pd.read_csv(uploaded_file, encoding='utf-8-sig')
         except: raw_df = pd.read_csv(uploaded_file, encoding='cp949')
         df = process_data(raw_df)
-        st.info(f"📂 업로드된 CSV 파일({uploaded_file.name}) 분석 중")
-        
-    # CASE C: 기존 단일 엑셀 파일 처리
     else:
         try: raw_df = pd.read_excel(uploaded_file, engine='calamine')
         except: raw_df = pd.read_excel(uploaded_file)
         df = process_data(raw_df)
-        st.info(f"📂 업로드된 엑셀 파일({uploaded_file.name}) 분석 중")
 else:
     df = load_default_db()
     if not df.empty:
@@ -169,12 +156,26 @@ else:
 if not df.empty:
     st.sidebar.divider()
     st.sidebar.header("🔍 필터 설정")
-    valid_df = df.dropna(subset=['제조사_일자'])
     
-    if not valid_df.empty:
-        min_d = valid_df['제조사_일자'].min().date()
-        max_d = valid_df['제조사_일자'].max().date()
+    # [오류 해결 포인트] 정상적인 연도 범위를 벗어난 이상치 데이터 필터링 (2020년 ~ 현재 연도+1년 기준)
+    today_year = datetime.date.today().year
+    chart_df_clean = df.dropna(subset=['제조사_일자']).copy()
+    
+    if not chart_df_clean.empty:
+        chart_df_clean = chart_df_clean[
+            (chart_df_clean['제조사_일자'].dt.year >= 2020) & 
+            (chart_df_clean['제조사_일자'].dt.year <= today_year + 1)
+        ]
+
+    if not chart_df_clean.empty:
+        # 안전하게 정제된 날짜 데이터를 바탕으로 최소/최대값 산출
+        min_d = chart_df_clean['제조사_일자'].min().date()
+        max_d = chart_df_clean['제조사_일자'].max().date()
         
+        # 10년 이상 격차 발생 대비 최종 방어 코드
+        if (max_d - min_d).days > 365 * 5:
+            min_d = max_d - datetime.timedelta(days=365) # 격차가 너무 크면 기본 조회기간을 최근 1년으로 고정
+            
         selected_range = st.sidebar.date_input("📅 조회 기간", value=(min_d, max_d))
         all_brands = sorted(df['브랜드'].unique())
         
@@ -193,7 +194,6 @@ if not df.empty:
                    (df['브랜드'].isin(final_selected))
             f_df = df.loc[mask]
 
-            # 상단 지표
             st.subheader(f"총 업로드: **{len(f_df):,} 개**")
             
             # --- 5. 기간별 그래프 분석 ---
@@ -214,35 +214,16 @@ if not df.empty:
                 plot_data = chart_df.groupby('월').size().reset_index(name='수량')
                 x_col = '월'
 
-            fig = px.bar(
-                plot_data, 
-                x=x_col, 
-                y='수량', 
-                text='수량', 
-                color_discrete_sequence=['#3366FF']
-            )
+            if not plot_data.empty:
+                fig = px.bar(plot_data, x=x_col, y='수량', text='수량', color_discrete_sequence=['#3366FF'])
+                fig.update_traces(texttemplate='%{text:,}', textposition='outside', hovertemplate='수량: %{y:,}개<extra></extra>')
+                fig.update_xaxes(tickformat="%Y년 %m월" if unit == "월별" else "%Y-%m-%d", dtick="M1" if unit == "월별" else None)
+                fig.update_layout(xaxis_title="", yaxis_title="업로드 수(개)", yaxis=dict(tickformat=",.0f"), height=500, hovermode="x")
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.info("선택 기간에 시각화할 데이터가 없습니다.")
 
-            fig.update_traces(
-                texttemplate='%{text:,}', 
-                textposition='outside',    
-                hovertemplate='수량: %{y:,}개<extra></extra>' 
-            )
-
-            fig.update_xaxes(
-                tickformat="%Y년 %m월" if unit == "월별" else "%Y-%m-%d", 
-                dtick="M1" if unit == "월별" else None
-            )
-
-            fig.update_layout(
-                xaxis_title="", 
-                yaxis_title="업로드 수(개)", 
-                yaxis=dict(tickformat=",.0f"), 
-                height=500,
-                hovermode="x"
-            )
-            st.plotly_chart(fig, use_container_width=True)
-
-            # 기존 상세 테이블
+            # 상세 테이블
             st.divider()
             c1, c2 = st.columns(2)
             with c1:
@@ -252,3 +233,9 @@ if not df.empty:
                 st.table(date_summary.rename("수량"))
             with c2:
                 st.write("👤 **직원별**")
+                staff_summary = f_df['브랜드'].value_counts()
+                staff_summary.index.name = "직원" 
+                st.table(staff_summary.rename("수량"))
+                
+            # --- 6. 상품명이 '-'인 제품 상세 조회 ---
+            st.divider()
