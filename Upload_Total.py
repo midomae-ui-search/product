@@ -235,4 +235,72 @@ if not df.empty:
                 date_summary.columns = ['날짜', '수량']
                 date_summary = date_summary.sort_values(by='날짜')
                 st.dataframe(date_summary, use_container_width=True, hide_index=True)
-                
+
+            # --- 6. 상품명이 미수정된 제품 상세 조회 ---
+            st.divider()
+            st.subheader("📦 상품명 미수정 카테고리 리스트")
+            
+            # 카테고리 코드 ID 번역을 위한 매핑 딕셔너리
+            category_data = {
+                "전체": "ALL", "국내배송": "CATE118", "국내배송 특가 ~70%": "CATE128", "현지오늘배송": "CATE119", "개런티": "CATE117", "H1": "CATE72", "H2": "CATE73", "H3": "CATE74", 
+                "CC 넘버원": "CATE75", "CC 티무역": "CATE76", "CC 팬더": "CATE77", "CC 나비/기타": "CATE78", "CC 일반": "CATE80",
+                "[고퀄]기타 브랜드": "CATE79", "PD": "CATE84", "LV": "CATE85", "CD": "CATE86", "CL": "CATE87", "GY": "CATE88", 
+                "LP": "CATE89", "BV": "CATE90", "MIU": "CATE91", "YSL": "CATE92", "DV": "CATE93", "THE ROW": "CATE116", 
+                "GG": "CATE95", "FF": "CATE94", "BL": "CATE97", "BBR": "CATE98", "LW": "CATE100", "VT": "CATE99", "CHL": "CATE96", 
+                "BAOBAO": "CATE101", "기타브랜드": "CATE102", "여행구/캐리어": "CATE103", "여성 의류": "CATE47", "바람막이/경량": "CATE48", 
+                "여성패딩(겨울용)": "CATE66", "코트/퍼/무스탕(겨울용)": "CATE129", "맨즈 의류": "CATE68", "맨즈 아우터": "CATE69", 
+                "키즈의류": "CATE130", "키즈 아우터": "CATE131", "여성 신발": "CATE105", "[수공]H 신발": "CATE106", "[수공]CC 신발": "CATE107", 
+                "[수공]기타 신발": "CATE108", "남성 신발": "CATE109", "[수공]남성 신발": "CATE110", "키즈 신발": "CATE111", 
+                "시계": "CATE113", "시계정보": "CATE114", "악세서리": "CATE125", "18K 금 제작": "CATE126", "지갑": "CATE115", 
+                "모자": "CATE134", "스카프/머플러": "CATE127", "선글라스/안경": "CATE133", "기타잡화/소품": "CATE135", "여성 벨트": "CATE136", "맨즈 벨트/잡화": "CATE139"
+            }
+            inv_map = {v: k for k, v in category_data.items()}
+
+            # 카테고리명을 한글로 변환하는 서브 함수
+            def map_cate_name(code):
+                if not code: return "미지정"
+                return ", ".join([inv_map.get(c.strip(), c.strip()) for c in str(code).split(',')])
+
+            # 상품명 컬럼 탐색 및 미수정(파이프라인 '|' 포함 등) 조건 필터링
+            name_col = next((c for c in f_df.columns if '상품명' in c or '명칭' in c), None)
+            if name_col:
+                target_df = f_df[(f_df[name_col] == '-') | (f_df[name_col].astype(str).str.contains(r'\|', na=False)) | (f_df[name_col].isna())].copy()
+            else:
+                target_df = f_df[f_df['상품명'] == '-'].copy()
+
+            # 미수정 데이터 존재 시 시각화 및 테이블 렌더링
+            if not target_df.empty:
+                cat_col = next((c for c in target_df.columns if '카테고리' in c or '분류' in c), None)
+                if cat_col:
+                    target_df['카테고리명'] = target_df[cat_col].apply(map_cate_name)
+                    cat_summary = target_df['카테고리명'].value_counts().reset_index()
+                    cat_summary.columns = ['카테고리명', '수량']
+
+                    # 미수정 카테고리 가로 막대 그래프 출력
+                    fig_cat = px.bar(cat_summary, x='수량', y='카테고리명', orientation='h', text='수량', color='수량', color_continuous_scale='Oranges')
+                    fig_cat.update_layout(yaxis={'categoryorder':'total ascending'}, height=300, showlegend=False, coloraxis_showscale=False)
+                    st.plotly_chart(fig_cat, use_container_width=True)
+
+                    # 셀렉트박스를 활용한 상세 리스트 바인딩
+                    selected_cat = st.selectbox("🔗 상세 목록을 보려는 카테고리를 선택하세요", cat_summary['카테고리명'])
+                    if selected_cat:
+                        detail_df = target_df[target_df['카테고리명'] == selected_cat].copy()
+                        display_cols = [c for c in ['상품번호', '상품명', '상품URL', '원산지', '제조사', '브랜드'] if c in detail_df.columns]
+                        
+                        st.write(f"### '{selected_cat}' 상세 리스트")
+                        st.data_editor(
+                            detail_df[display_cols], 
+                            column_config={"상품URL": st.column_config.LinkColumn("제품 링크", display_text="바로가기")}, 
+                            use_container_width=True, 
+                            hide_index=True, 
+                            disabled=True
+                        )
+                else: 
+                    st.warning("⚠️ '카테고리' 컬럼을 찾을 수 없습니다.")
+            else: 
+                st.info("✅ 선택한 기간 내에 상품명이 미수정 상태인 데이터가 존재하지 않습니다. 전부 가공이 완료되었습니다.")
+        else:
+            st.info("📅 종료 날짜를 마저 선택해주세요.")
+    else:
+        st.error("데이터 내에 유효한 날짜 형식이 없거나 너무 오래된 날짜 데이터만 존재합니다.")
+
