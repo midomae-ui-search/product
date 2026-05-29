@@ -12,13 +12,20 @@ ZIP_FILE = '상품검색 V4.zip'
 # =========================================================
 def get_connection():
     try:
-        # 💡 [핵심 안전장치] 만약 디스크에 파일이 존재하더라도 
-        # 파일 크기가 너무 작다면(50MB 미만) 이전에 실패한 가짜 파일이므로 완전히 강제 삭제합니다.
-        if os.path.exists(DB_FILE):
-            if os.path.getsize(DB_FILE) < 1024 * 1024 * 50:
-                os.remove(DB_FILE)
+        # 💡 [핵심 개선] ZIP 파일과 DB 파일의 수정 시간을 비교하여 자동 업데이트 유도
+        if os.path.exists(ZIP_FILE):
+            zip_time = os.path.getmtime(ZIP_FILE)   # ZIP 파일의 최근 수정 시간
+            db_time = os.path.getmtime(DB_FILE) if os.path.exists(DB_FILE) else 0
+            
+            # 가짜 파일 방지 (50MB 미만) 또는 ZIP 파일이 DB 파일보다 최신인 경우
+            if os.path.exists(DB_FILE):
+                is_too_small = os.path.getsize(DB_FILE) < 1024 * 1024 * 50
+                is_new_zip_uploaded = zip_time > db_time
                 
-        # 가짜 파일이 지워졌거나 파일이 없을 때만 깃허브의 정상 .zip 압축을 다시 풉니다.
+                if is_too_small or is_new_zip_uploaded:
+                    os.remove(DB_FILE)  # 기존 구버전/가짜 DB 완전히 삭제
+                    
+        # DB 파일이 삭제되었거나 없는 경우 새로운 ZIP의 압축을 해제합니다.
         if not os.path.exists(DB_FILE) and os.path.exists(ZIP_FILE):
             with zipfile.ZipFile(ZIP_FILE, 'r') as zip_ref:
                 zip_ref.extractall('.')
@@ -26,7 +33,7 @@ def get_connection():
         conn = sqlite3.connect(DB_FILE)
         return conn
     except Exception as e:
-        st.error(f"❌ 데이터베이스 연결 실패: {e}")
+        st.error(f"❌ 데이터베이스 연결 및 압축 해제 실패: {e}")
         return None
 
 # =========================================================
