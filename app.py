@@ -138,7 +138,7 @@ if conn:
     if 'load_count' not in st.session_state:
         st.session_state.load_count = 100
 
-    conditions = ['"판매상태" IN ("숨김", "품절") OR "카테고리ID" = "CATE140"']
+    conditions = ['"판매상태" NOT IN ("숨김", "품절") AND "카테고리ID" != "CATE140"']
 
     if keyword:
         if keyword.startswith("#"):
