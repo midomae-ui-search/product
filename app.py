@@ -127,7 +127,7 @@ with col_clear:
 
 st.markdown("""
     <div style="text-align: center; color: #ff4b4b; font-weight: bold; font-size: 17.5px;">
-        ** 6/8 ~ 6/12 악세서리/시계 10% 할인
+        ** 6/15 ~ 6/19 에르메스 전품목 10% 할인
     </div>
     """, unsafe_allow_html=True)
 
@@ -138,7 +138,7 @@ if conn:
     if 'load_count' not in st.session_state:
         st.session_state.load_count = 100
 
-    conditions = ['"판매상태" NOT IN ("숨김", "품절")']
+    conditions = ['"판매상태" NOT IN ("숨김", "품절") AND "카테고리ID" != "CATE140"']
 
     if keyword:
         if keyword.startswith("#"):
