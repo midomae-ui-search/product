@@ -127,7 +127,7 @@ with col_clear:
 
 st.markdown("""
     <div style="text-align: center; color: #ff4b4b; font-weight: bold; font-size: 17.5px;">
-        ** 6/15 ~ 6/19 에르메스 전품목 10% 할인
+        **
     </div>
     """, unsafe_allow_html=True)
 
