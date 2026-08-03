@@ -3,3 +3,4 @@ pandas==2.2.3
 openpyxl==3.1.5
 plotly>=5.0.0,<6.0.0
 python-calamine
+pyarrow<15.0.0
